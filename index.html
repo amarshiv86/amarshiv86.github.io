@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Amar Singh — Staff SRE + AI Engineer. 10+ years building reliable distributed systems. Now applying AI/ML to SRE problems.">
+<title>Amar Singh · Staff SRE + AI Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ──────────────────────────────────────────────────────────── */
+:root {
+  --bg:       #080c12;
+  --bg2:      #0d1219;
+  --bg3:      #111820;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --text:     #dde6f0;
+  --muted:    #4a6070;
+  --dim:      #1e2d3a;
+  --green:    #00e5a0;
+  --green2:   rgba(0,229,160,0.1);
+  --amber:    #f5a623;
+  --amber2:   rgba(245,166,35,0.1);
+  --blue:     #38bdf8;
+  --blue2:    rgba(56,189,248,0.1);
+  --purple:   #a78bfa;
+  --purple2:  rgba(167,139,250,0.1);
+  --red:      #f87171;
+  --mono:     'JetBrains Mono', monospace;
+  --display:  'Syne', sans-serif;
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── Grid bg ─────────────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,160,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,160,0.018) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Ambient glow ────────────────────────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  top: -300px; left: 50%;
+  transform: translateX(-50%);
+  width: 800px; height: 600px;
+  background: radial-gradient(ellipse, rgba(0,229,160,0.05) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+/* ── Nav ─────────────────────────────────────────────────────────────── */
+nav {
+  position: sticky; top: 0;
+  background: rgba(8,12,18,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  padding: 0 24px;
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 52px;
+}
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--green);
+  letter-spacing: 0.05em;
+}
+.nav-logo span { color: var(--muted); }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
+
+/* ── Hero ────────────────────────────────────────────────────────────── */
+.hero {
+  padding: 88px 0 72px;
+  border-bottom: 1px solid var(--border);
+}
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--green);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: #fff;
+  margin-bottom: 20px;
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--green);
+}
+.hero-sub {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 560px;
+  line-height: 1.8;
+  margin-bottom: 36px;
+}
+.hero-sub strong { color: var(--text); font-weight: 500; }
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  margin-bottom: 36px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stat-item { display: flex; flex-direction: column; gap: 3px; }
+.stat-num {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.stat-num.g { color: var(--green); }
+.stat-num.a { color: var(--amber); }
+.stat-num.b { color: var(--blue); }
+.stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hero-links { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--green);
+  color: #080c12;
+  border-color: var(--green);
+}
+.btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border2);
+}
+.btn-outline:hover { border-color: var(--green); color: var(--green); }
+
+/* ── Section ─────────────────────────────────────────────────────────── */
+section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 40px;
+}
+.section-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border: 1px solid rgba(0,229,160,0.2);
+  border-radius: 4px;
+  background: var(--green2);
+}
+.section-title {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Projects grid ───────────────────────────────────────────────────── */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.project-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.project-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.project-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.card-green::before  { background: var(--green); }
+.card-amber::before  { background: var(--amber); }
+.card-blue::before   { background: var(--blue); }
+.card-purple::before { background: var(--purple); }
+.card-red::before    { background: var(--red); }
+
+.card-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.card-title {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.card-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.tag-sre {
+  background: var(--purple2);
+  border-color: rgba(167,139,250,0.2);
+  color: var(--purple);
+}
+.card-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.card-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: color 0.2s;
+}
+.card-link:hover { color: var(--green); }
+.card-link-live {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--green2);
+  color: var(--green);
+  border: 1px solid rgba(0,229,160,0.2);
+  text-decoration: none;
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+}
+.card-link-live:hover { background: var(--green); color: #080c12; }
+
+/* ── Skills ──────────────────────────────────────────────────────────── */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.skill-group {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.skill-group-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.skill-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.skill-item {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* ── Experience ──────────────────────────────────────────────────────── */
+.exp-list { display: flex; flex-direction: column; gap: 0; }
+.exp-item {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 24px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--border);
+}
+.exp-item:last-child { border-bottom: none; }
+.exp-meta { }
+.exp-period {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.exp-company {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+}
+.exp-location {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.exp-title {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.exp-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.exp-bullets li {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  padding-left: 14px;
+  position: relative;
+}
+.exp-bullets li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-size: 10px;
+}
+.exp-bullets li strong { color: var(--text); font-weight: 500; }
+
+/* ── About / sre-ai angle ────────────────────────────────────────────── */
+.angle-box {
+  background: var(--bg2);
+  border: 1px solid rgba(0,229,160,0.15);
+  border-radius: 12px;
+  padding: 28px 32px;
+  margin-bottom: 40px;
+}
+.angle-box p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.9;
+  max-width: 680px;
+}
+.angle-box p strong { color: var(--text); font-weight: 500; }
+.angle-box p + p { margin-top: 12px; }
+
+/* ── Certs ───────────────────────────────────────────────────────────── */
+.certs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+.cert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+}
+.cert-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  flex-shrink: 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+footer {
+  padding: 40px 0 32px;
+  text-align: center;
+}
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 16px;
+}
+.footer-links a {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--green); }
+.footer-copy {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+  .hero { padding: 56px 0 48px; }
+  .exp-item { grid-template-columns: 1fr; gap: 8px; }
+  .hero-stats { gap: 24px; }
+}
+
+/* ── Fade in ─────────────────────────────────────────────────────────── */
+.fade-in {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeUp 0.5s forwards;
+}
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.project-card:nth-child(1)  { animation-delay: 0.05s; }
+.project-card:nth-child(2)  { animation-delay: 0.10s; }
+.project-card:nth-child(3)  { animation-delay: 0.15s; }
+.project-card:nth-child(4)  { animation-delay: 0.20s; }
+.project-card:nth-child(5)  { animation-delay: 0.25s; }
+.project-card:nth-child(6)  { animation-delay: 0.30s; }
+.project-card:nth-child(7)  { animation-delay: 0.35s; }
+.project-card:nth-child(8)  { animation-delay: 0.40s; }
+.project-card:nth-child(9)  { animation-delay: 0.45s; }
+.project-card:nth-child(10) { animation-delay: 0.50s; }
+.project-card:nth-child(11) { animation-delay: 0.55s; }
+.project-card:nth-child(12) { animation-delay: 0.60s; }
+</style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">amarshiv86<span>.github.io</span></div>
+    <div class="nav-links">
+      <a href="#projects">Projects</a>
+      <a href="#skills">Skills</a>
+      <a href="#experience">Experience</a>
+      <a href="mailto:amarshiv0506@gmail.com">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────── -->
+<div class="wrap">
+  <div class="hero fade-in">
+    <div class="hero-eyebrow">Available for Staff SRE + AI Engineer roles · Sunnyvale, CA</div>
+    <h1>Amar Singh<br><em>Staff SRE</em> +<br>AI Engineer</h1>
+    <p class="hero-sub">
+      <strong>10+ years</strong> building and operating distributed systems at scale.
+      Now applying <strong>ML and LLM engineering</strong> to SRE problems —
+      intelligent observability, automated incident response, and AI-powered ops tooling.
+      Currently at Netskope · Previously HP, Nuvizz.
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num g">10+</div>
+        <div class="stat-label">Years SRE</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">12</div>
+        <div class="stat-label">AI/ML Projects</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num a">99.9%</div>
+        <div class="stat-label">SLA Target</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num b">500+</div>
+        <div class="stat-label">Instances Managed</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" style="color:var(--purple)">GCP · AWS</div>
+        <div class="stat-label">Cloud Platforms</div>
+      </div>
+    </div>
+
+    <div class="hero-links">
+      <a href="#projects" class="btn btn-primary">→ View Projects</a>
+      <a href="https://github.com/amarshiv86" target="_blank" class="btn btn-outline">GitHub</a>
+      <a href="https://linkedin.com/in/amar-singh-5131b222" target="_blank" class="btn btn-outline">LinkedIn</a>
+      <a href="mailto:amarshiv0506@gmail.com" class="btn btn-outline">Email</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── About ─────────────────────────────────────────────────────────── -->
+<div class="wrap">
+  <section id="about">
+    <div class="section-header">
+      <div class="section-tag">About</div>
+      <div class="section-title">SRE meets AI Engineering</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="angle-box">
+      <p>
+        I'm a <strong>Staff Infrastructure SRE at Netskope</strong> with over a decade of experience
+        running production systems on GCP and AWS. I've built CI/CD pipelines, led Kubernetes
+        adoption, designed disaster recovery strategies, and kept critical microservices running
+        at 99.9%+ SLA — including 24x7 on-call with sub-5-minute response times.
+      </p>
+      <p>
+        Over the past year I've been systematically building an <strong>AI/ML engineering skillset</strong>
+        on top of that SRE foundation — 12 projects covering RAG, fine-tuning, LLM agents,
+        streaming APIs, eval frameworks, observability dashboards, and MCP servers.
+        Every project is built with production SRE thinking: SLOs, latency tracking,
+        audit logging, CI gates, and graceful degradation.
+      </p>
+      <p>
+        I'm targeting roles that need both sides: <strong>someone who can build and ship AI systems,
+        and also own their reliability in production</strong>. That combination is rare.
+      </p>
+    </div>
+
+    <div class="certs">
+      <div class="cert"><div class="cert-dot"></div>CCNP — Cisco Certified Network Professional</div>
+      <div class="cert"><div class="cert-dot"></div>CCNA — Cisco Certified Network Associate</div>
+      <div class="cert"><div class="cert-dot"></div>Python Programming — Rice University</div>
+      <div class="cert"><div class="cert-dot" style="background:var(--blue)"></div>M.S. Network Communication — University of Houston</div>
+    </div>
+  </section>
+</div>
+
+<!-- ── Projects ──────────────────────────────────────────────────────── -->
+<div class="wrap">
+  <section id="projects">
+    <div class="section-header">
+      <div class="section-tag">Projects</div>
+      <div class="section-title">12-Project AI/ML Arc</div>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="projects-grid">
+
+      <!-- P01 -->
+      <div class="project-card card-green fade-in">
+        <div class="card-num">P01 · MLOps</div>
+        <div class="card-title">AUS Weather Predictor</div>
+        <div class="card-desc">End-to-end MLOps pipeline — RandomForest classifier predicting Australian rainfall. ROC-AUC 0.855. Automated retraining via GitHub Actions.</div>
+        <div class="card-tags">
+          <span class="tag">sklearn</span><span class="tag">FastAPI</span><span class="tag">Docker</span>
+          <span class="tag">MLflow</span><span class="tag">HF Spaces</span>
+          <span class="tag tag-sre">CI/CD</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p01-weather-predictor" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p01-australia-rain-predictor" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P02 -->
+      <div class="project-card card-amber fade-in">
+        <div class="card-num">P02 · MLOps</div>
+        <div class="card-title">Sentiment + Drift Detection</div>
+        <div class="card-desc">NLP sentiment classifier with production data drift monitoring using Evidently AI. Detects when model input distribution shifts from training data.</div>
+        <div class="card-tags">
+          <span class="tag">HF Transformers</span><span class="tag">Evidently AI</span>
+          <span class="tag tag-sre">Drift Detection</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p02-sentiment-drift" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p02-sentiment-drift" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P03 -->
+      <div class="project-card card-blue fade-in">
+        <div class="card-num">P03 · Multimodal</div>
+        <div class="card-title">Image Captioning</div>
+        <div class="card-desc">Vision-language model pipeline using ViT encoder + GPT2 decoder. Multimodal architecture with Gradio demo interface.</div>
+        <div class="card-tags">
+          <span class="tag">ViT</span><span class="tag">GPT-2</span><span class="tag">Gradio</span>
+          <span class="tag">Multimodal</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p03-image-captioning" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p03-image-captioning" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P04 -->
+      <div class="project-card card-green fade-in">
+        <div class="card-num">P04 · RAG</div>
+        <div class="card-title">Document Q&A (RAG)</div>
+        <div class="card-desc">Retrieval-Augmented Generation over PDF documents. Ask natural language questions, get grounded answers with source citations.</div>
+        <div class="card-tags">
+          <span class="tag">LangChain</span><span class="tag">ChromaDB</span><span class="tag">PDF</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p04-doc-qa-rag" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p04-doc-qa-rag" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P05 -->
+      <div class="project-card card-amber fade-in">
+        <div class="card-num">P05 · RAG</div>
+        <div class="card-title">Financial News RAG</div>
+        <div class="card-desc">Scheduled financial news ingestion with RAG-powered Q&A. Mistral 7B answers questions grounded in real-time financial news corpus.</div>
+        <div class="card-tags">
+          <span class="tag">Mistral</span><span class="tag">ChromaDB</span>
+          <span class="tag tag-sre">Scheduled Pipeline</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p05-financial-news-rag" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p05-financial-news-rag" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P06 -->
+      <div class="project-card card-blue fade-in">
+        <div class="card-num">P06 · AI Tools</div>
+        <div class="card-title">AI Code Review Bot</div>
+        <div class="card-desc">GitHub PR bot that auto-reviews code using Qwen2.5-Coder. Posts inline comments with severity ratings. Triggered by GitHub Actions webhook on every PR.</div>
+        <div class="card-tags">
+          <span class="tag">FastAPI</span><span class="tag">Qwen2.5</span><span class="tag">GitHub API</span>
+          <span class="tag tag-sre">Webhook</span><span class="tag tag-sre">SLO Monitored</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p06-ai-code-review" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p06-ai-code-review" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P07 -->
+      <div class="project-card card-purple fade-in">
+        <div class="card-num">P07 · Fine-tuning</div>
+        <div class="card-title">LoRA Fine-tuned LLM</div>
+        <div class="card-desc">QLoRA fine-tuning of Phi-3-mini on SRE runbook Q&A pairs using PEFT. ROUGE-1 improved 65.8% over base model. Adapter published to HF Hub.</div>
+        <div class="card-tags">
+          <span class="tag">QLoRA</span><span class="tag">PEFT</span><span class="tag">Phi-3-mini</span>
+          <span class="tag">ROUGE</span><span class="tag tag-sre">SRE Domain</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p07-lora-finetune" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p07-sre-lora-demo" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P08 -->
+      <div class="project-card card-red fade-in">
+        <div class="card-num">P08 · Agents</div>
+        <div class="card-title">SRE Ops Agent with Tools</div>
+        <div class="card-desc">ReAct agent answering SRE queries using real tools — SLO status, runbook lookup, alert queries. External calls require human-in-the-loop approval.</div>
+        <div class="card-tags">
+          <span class="tag">LangGraph</span><span class="tag">ReAct</span><span class="tag">Tool Calling</span>
+          <span class="tag tag-sre">Human-in-loop</span><span class="tag tag-sre">Audit Log</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p08-sre-agent" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p08-sre-agent" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P09 -->
+      <div class="project-card card-green fade-in">
+        <div class="card-num">P09 · Evals</div>
+        <div class="card-title">LLM Eval Framework</div>
+        <div class="card-desc">Generic LLM evaluation using ROUGE + LLM-as-judge + custom SRE rubric. SQLite score history for regression tracking. CI gate blocks deploy on score drop >5%.</div>
+        <div class="card-tags">
+          <span class="tag">ROUGE</span><span class="tag">LLM Judge</span><span class="tag">SQLite</span>
+          <span class="tag tag-sre">CI Gate</span><span class="tag tag-sre">Regression Detection</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p09-llm-eval" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p09-llm-eval" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P10 -->
+      <div class="project-card card-amber fade-in">
+        <div class="card-num">P10 · Observability</div>
+        <div class="card-title">LLM Observability Dashboard</div>
+        <div class="card-desc">Unified dashboard for LLM systems — eval scores (P09), SLO burn rates, latency p50/p95/p99, cost tracking, prompt versioning, and anomaly alerts.</div>
+        <div class="card-tags">
+          <span class="tag">Gradio</span><span class="tag">SQLite</span>
+          <span class="tag tag-sre">SLO Burn Rate</span><span class="tag tag-sre">Cost Tracking</span><span class="tag tag-sre">Alerts</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p10-observability" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p10-observability" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P11 -->
+      <div class="project-card card-blue fade-in">
+        <div class="card-num">P11 · Streaming</div>
+        <div class="card-title">Streaming LLM API</div>
+        <div class="card-desc">Token-by-token streaming with TTFT tracking, cancellation tokens, and per-user rate limiting. p95 TTFT displayed in real-time metrics panel.</div>
+        <div class="card-tags">
+          <span class="tag">SSE</span><span class="tag">Gradio 5</span>
+          <span class="tag tag-sre">TTFT Metrics</span><span class="tag tag-sre">Rate Limiting</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p11-streaming-llm-api" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p11-streaming" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+      <!-- P12 -->
+      <div class="project-card card-purple fade-in">
+        <div class="card-num">P12 · MCP · Capstone</div>
+        <div class="card-title">SRE Ops MCP Server</div>
+        <div class="card-desc">Custom MCP server exposing 6 SRE tools as LLM-callable actions via JSON-RPC 2.0. Stdio transport works with Claude Desktop for real on-call assistance.</div>
+        <div class="card-tags">
+          <span class="tag">MCP Protocol</span><span class="tag">JSON-RPC 2.0</span>
+          <span class="tag tag-sre">Audit Logging</span><span class="tag tag-sre">Claude Desktop</span>
+        </div>
+        <div class="card-links">
+          <a href="https://github.com/amarshiv86/p12-sre-mcp" target="_blank" class="card-link">GitHub</a>
+          <a href="https://huggingface.co/spaces/amarshiv86/p12-sre-mcp" target="_blank" class="card-link-live">Live Demo ↗</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<!-- ── Skills ─────────────────────────────────────────────────────────── -->
+<div class="wrap">
+  <section id="skills">
+    <div class="section-header">
+      <div class="section-tag">Skills</div>
+      <div class="section-title">Technical Stack</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="skills-grid">
+      <div class="skill-group">
+        <div class="skill-group-label">AI / ML Engineering</div>
+        <div class="skill-items">
+          <span class="skill-item">RAG</span>
+          <span class="skill-item">LLM Fine-tuning</span>
+          <span class="skill-item">QLoRA / PEFT</span>
+          <span class="skill-item">LangChain</span>
+          <span class="skill-item">LangGraph</span>
+          <span class="skill-item">MCP Protocol</span>
+          <span class="skill-item">Evals</span>
+          <span class="skill-item">Streaming</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">Models & Frameworks</div>
+        <div class="skill-items">
+          <span class="skill-item">HuggingFace</span>
+          <span class="skill-item">Transformers</span>
+          <span class="skill-item">Mistral</span>
+          <span class="skill-item">Phi-3</span>
+          <span class="skill-item">Qwen2.5</span>
+          <span class="skill-item">ViT / GPT-2</span>
+          <span class="skill-item">sklearn</span>
+          <span class="skill-item">MLflow</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">SRE / Infrastructure</div>
+        <div class="skill-items">
+          <span class="skill-item">Kubernetes</span>
+          <span class="skill-item">Docker</span>
+          <span class="skill-item">Terraform</span>
+          <span class="skill-item">Ansible</span>
+          <span class="skill-item">Prometheus</span>
+          <span class="skill-item">Grafana</span>
+          <span class="skill-item">SLO/SLI</span>
+          <span class="skill-item">On-call</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">Cloud Platforms</div>
+        <div class="skill-items">
+          <span class="skill-item">GCP</span>
+          <span class="skill-item">AWS</span>
+          <span class="skill-item">OpenStack</span>
+          <span class="skill-item">VMware ESXi</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">Dev & APIs</div>
+        <div class="skill-items">
+          <span class="skill-item">Python</span>
+          <span class="skill-item">FastAPI</span>
+          <span class="skill-item">Bash</span>
+          <span class="skill-item">GitHub Actions</span>
+          <span class="skill-item">Jenkins</span>
+          <span class="skill-item">REST / JSON-RPC</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">Data & Storage</div>
+        <div class="skill-items">
+          <span class="skill-item">ChromaDB</span>
+          <span class="skill-item">SQLite</span>
+          <span class="skill-item">MySQL</span>
+          <span class="skill-item">Elasticsearch</span>
+          <span class="skill-item">Couchbase</span>
+          <span class="skill-item">RabbitMQ</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ── Experience ─────────────────────────────────────────────────────── -->
+<div class="wrap">
+  <section id="experience">
+    <div class="section-header">
+      <div class="section-tag">Experience</div>
+      <div class="section-title">Work History</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="exp-list">
+
+      <div class="exp-item">
+        <div class="exp-meta">
+          <div class="exp-period">Jul 2019 – Present</div>
+          <div class="exp-company">Netskope</div>
+          <div class="exp-location">Santa Clara, CA</div>
+        </div>
+        <div>
+          <div class="exp-title">Staff Infrastructure SRE</div>
+          <ul class="exp-bullets">
+            <li>Led architecture review and production onboarding for <strong>20+ critical microservices</strong> across GCP and OpenStack</li>
+            <li>Designed disaster recovery strategy reducing potential downtime <strong>from hours to minutes</strong></li>
+            <li>Automated infrastructure provisioning with Terraform and Ansible — <strong>60% reduction in deployment time</strong> across 500+ instances</li>
+            <li>Spearheaded Kubernetes, HashiCorp Vault, and Grafana adoption with hands-on team training</li>
+            <li>Root cause analysis on critical incidents — <strong>85% reduction in repeat incidents</strong></li>
+            <li>24x7 on-call rotation with <strong>average incident response under 5 minutes</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item">
+        <div class="exp-meta">
+          <div class="exp-period">Oct 2017 – Jun 2019</div>
+          <div class="exp-company">Nuvizz Inc.</div>
+          <div class="exp-location">Atlanta, GA</div>
+        </div>
+        <div>
+          <div class="exp-title">Senior System Administrator</div>
+          <ul class="exp-bullets">
+            <li>Architected and deployed Kubernetes clusters across DEV, QA, and PROD environments</li>
+            <li>Maintained HA database clusters (MySQL, Couchbase, Elasticsearch) at <strong>99.95% uptime</strong></li>
+            <li>Built centralized monitoring for <strong>200+ services</strong> using Zabbix with custom alerting</li>
+            <li>Reduced environment provisioning time <strong>from days to hours</strong> via Docker and Rancher</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item">
+        <div class="exp-meta">
+          <div class="exp-period">Nov 2016 – Oct 2017</div>
+          <div class="exp-company">Hewlett-Packard</div>
+          <div class="exp-location">Palo Alto, CA</div>
+        </div>
+        <div>
+          <div class="exp-title">System Administrator</div>
+          <ul class="exp-bullets">
+            <li>Managed VMware ESXi infrastructure and SAN storage for dev and production workloads</li>
+            <li>Administered AWS EC2 instances, optimizing costs while maintaining performance</li>
+            <li>Enterprise-level infrastructure support minimizing downtime across HP data centers</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────── -->
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="https://github.com/amarshiv86" target="_blank">GitHub</a>
+      <a href="https://linkedin.com/in/amar-singh-5131b222" target="_blank">LinkedIn</a>
+      <a href="https://huggingface.co/amarshiv86" target="_blank">HuggingFace</a>
+      <a href="mailto:amarshiv0506@gmail.com">amarshiv0506@gmail.com</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · Sunnyvale, CA · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

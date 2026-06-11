@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P02 · Sentiment + Drift Detection — Fine-tuned DistilBERT with Evidently AI drift monitoring by Amar Singh">
+<title>P02 · Sentiment + Drift Detection · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --amber:#b45309; --amber-l:#fef3c7;
+  --blue:#1d4ed8; --blue-l:#eff6ff;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--amber-l);color:var(--amber);border:1px solid #fde68a}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.amber{color:var(--amber)}
+.meta-value.green{color:var(--green)}
+.meta-value.blue{color:var(--blue)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin:28px 0}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.metric-num{font-family:var(--display);font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.metric-num.amber{color:var(--amber)}
+.metric-num.green{color:var(--green)}
+.metric-num.blue{color:var(--blue)}
+.metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--amber)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.stack-item.ml{background:var(--amber-l);border-color:#fde68a;color:var(--amber)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .kw{color:#7dd3fc}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+/* drift metric highlight */
+.drift-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:20px 0}
+.drift-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.drift-row:last-child{border-bottom:none}
+.drift-col{color:var(--muted)}
+.drift-val{font-weight:600;font-family:var(--mono);font-size:12px}
+.drift-val.ok{color:var(--green)}
+.drift-val.warn{color:var(--amber)}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p02-sentiment-drift" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P02 · MLOps <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">Sentiment +<br>Drift Detection</h1>
+    <p class="proj-subtitle">
+      Fine-tuned DistilBERT on IMDB movie reviews with full MLOps pipeline —
+      automated retraining, experiment tracking, and production drift detection
+      using Evidently AI to catch when model input distribution shifts.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Model</div><div class="meta-value">DistilBERT fine-tuned</div></div>
+      <div class="meta-item"><div class="meta-label">ROC-AUC</div><div class="meta-value amber">0.960</div></div>
+      <div class="meta-item"><div class="meta-label">F1 Score</div><div class="meta-value green">0.893</div></div>
+      <div class="meta-item"><div class="meta-label">Dataset</div><div class="meta-value">IMDB · 25k reviews</div></div>
+      <div class="meta-item"><div class="meta-label">Drift Tool</div><div class="meta-value">Evidently AI</div></div>
+      <div class="meta-item"><div class="meta-label">Tracking</div><div class="meta-value">MLflow</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Model Performance -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Model Performance</div>
+    <div class="metrics">
+      <div class="metric-card"><div class="metric-num amber">0.960</div><div class="metric-label">ROC-AUC</div></div>
+      <div class="metric-card"><div class="metric-num green">89.4%</div><div class="metric-label">Accuracy</div></div>
+      <div class="metric-card"><div class="metric-num blue">0.893</div><div class="metric-label">F1 Score</div></div>
+      <div class="metric-card"><div class="metric-num" style="color:#6d28d9">90.2%</div><div class="metric-label">Recall</div></div>
+      <div class="metric-card"><div class="metric-num" style="color:#b91c1c">88.4%</div><div class="metric-label">Precision</div></div>
+    </div>
+    <p class="prose">
+      DistilBERT fine-tuned on IMDB dataset — 25,000 movie reviews balanced 50/50
+      positive/negative. ROC-AUC of 0.960 means the model correctly distinguishes
+      positive from negative sentiment 96% of the time. The model is significantly
+      stronger than P01's classifier because <strong>transformer attention mechanisms
+      capture long-range dependencies in text</strong> that simple feature engineering cannot.
+    </p>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <p class="prose">Four stages run automatically on every push — training, evaluation,
+    drift detection, and deployment are all decoupled:</p>
+    <ul class="steps" style="margin-top:24px">
+      <li><div class="step-num">1</div><div class="step-content"><strong>prepare.py</strong> — downloads IMDB from HF Hub, strips HTML tags from reviews, subsamples for fast iteration (configurable via params.yaml), saves to train/test CSV</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>train.py</strong> — fine-tunes distilbert-base-uncased using HuggingFace Trainer API, logs all params and metrics to MLflow, saves best checkpoint by F1 score</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>evaluate.py</strong> — runs full evaluation on held-out test set, generates confusion matrix PNG, writes metrics.json with accuracy/F1/ROC-AUC/precision/recall</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>drift_report.py</strong> — runs model inference on both train and test samples, compares distributions across 6 columns using Evidently AI, saves HTML drift report</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>hf_upload.py</strong> — pushes model weights + tokenizer to HF Hub model registry, pushes processed dataset to HF Hub dataset registry</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>FastAPI app</strong> — downloads model from HF Hub at startup, serves HTML form + /predict/json + /health endpoints</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Architecture -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 620" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P02 Sentiment + Drift Detection Architecture</title>
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <!-- Background -->
+    <rect x="0" y="0" width="700" height="620" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="588" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- ROW 1: GitHub Push -->
+    <rect x="240" y="36" width="200" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="58" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">GitHub Push</text>
+    <text x="340" y="90" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#64748b">src/ or params.yaml changed</text>
+    <line x1="340" y1="80" x2="340" y2="108" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <!-- Branch point -->
+    <line x1="340" y1="108" x2="155" y2="108" stroke="#334155" stroke-width="1.5"/>
+    <line x1="340" y1="108" x2="495" y2="108" stroke="#334155" stroke-width="1.5"/>
+    <line x1="155" y1="108" x2="155" y2="116" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <line x1="495" y1="108" x2="495" y2="116" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+    <!-- ROW 2: Train + Deploy workflows -->
+    <rect x="50" y="116" width="210" height="56" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="155" y="136" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#f59e0b">Train workflow</text>
+    <text x="155" y="156" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">prepare → train → eval → drift</text>
+    <rect x="390" y="116" width="210" height="56" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="495" y="136" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#94a3b8">Deploy workflow</text>
+    <text x="495" y="156" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">triggers on api/ only</text>
+
+    <!-- ROW 3: 4 pipeline steps -->
+    <line x1="155" y1="172" x2="155" y2="208" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="28" y="216" width="96" height="44" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="76" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#f59e0b">prepare.py</text>
+    <line x1="124" y1="238" x2="138" y2="238" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="138" y="216" width="82" height="44" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="179" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#f59e0b">train.py</text>
+    <line x1="220" y1="238" x2="234" y2="238" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="234" y="216" width="90" height="44" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="279" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#f59e0b">evaluate.py</text>
+    <line x1="324" y1="238" x2="338" y2="238" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="338" y="216" width="100" height="44" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="388" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#a78bfa">drift_report.py</text>
+    <text x="179" y="272" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#475569">MLflow logs</text>
+    <text x="388" y="272" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">Evidently AI</text>
+
+    <!-- ROW 4: HuggingFace Hub -->
+    <path d="M279 260 L279 306 L340 306 L340 332" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="170" y="340" width="340" height="56" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="340" y="360" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#a78bfa">HuggingFace Hub</text>
+    <text x="340" y="380" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">model weights + tokenizer · dataset registry</text>
+
+    <!-- ROW 5: FastAPI -->
+    <line x1="340" y1="396" x2="340" y2="448" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="170" y="456" width="340" height="56" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="340" y="476" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">FastAPI on HF Spaces</text>
+    <text x="340" y="496" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">pulls model + tokenizer at startup</text>
+
+    <!-- ROW 6: Endpoints -->
+    <path d="M270 512 L130 548" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <path d="M340 512 L340 548" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <path d="M410 512 L550 548" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <rect x="56" y="556" width="148" height="26" rx="13" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="130" y="569" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#94a3b8">/ HTML form</text>
+    <rect x="278" y="556" width="124" height="26" rx="13" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="569" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#94a3b8">/predict/json</text>
+    <rect x="482" y="556" width="80" height="26" rx="13" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="522" y="569" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#94a3b8">/health</text>
+
+    <!-- Deploy bypass arrow -->
+    <path d="M600 144 L658 144 L658 484 L512 484 L512 456" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr2)"/>
+    <text x="672" y="330" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#475569" transform="rotate(90,672,330)">no retrain</text>
+    </svg>
+
+    <p class="prose">
+      P02 adds a <strong>fourth pipeline stage</strong> that P01 doesn't have — drift detection.
+      After training and evaluation, <code>drift_report.py</code> runs inference on both
+      training and test samples and uses Evidently AI to compare their distributions.
+      The report is saved as an HTML artifact and pushed to HF Hub alongside the model.
+    </p>
+  </div>
+</div>
+
+<!-- Drift Detection -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Drift Detection — How it works</div>
+    <p class="prose" style="margin-bottom:20px">
+      Evidently AI compares the <strong>reference data</strong> (training set sample)
+      against <strong>current data</strong> (test set, simulating production traffic)
+      across 6 columns. Each column gets a statistical test appropriate for its type:
+    </p>
+    <div class="drift-box">
+      <div class="drift-row">
+        <div class="drift-col">label distribution</div>
+        <div class="drift-col" style="color:var(--muted);font-size:12px">chi-squared test</div>
+        <div class="drift-val ok">✓ No drift</div>
+      </div>
+      <div class="drift-row">
+        <div class="drift-col">model predictions</div>
+        <div class="drift-col" style="color:var(--muted);font-size:12px">chi-squared test</div>
+        <div class="drift-val ok">✓ No drift</div>
+      </div>
+      <div class="drift-row">
+        <div class="drift-col">confidence scores</div>
+        <div class="drift-col" style="color:var(--muted);font-size:12px">Kolmogorov-Smirnov</div>
+        <div class="drift-val warn">⚠ Slight shift</div>
+      </div>
+      <div class="drift-row">
+        <div class="drift-col">text length</div>
+        <div class="drift-col" style="color:var(--muted);font-size:12px">Kolmogorov-Smirnov</div>
+        <div class="drift-val ok">✓ No drift</div>
+      </div>
+      <div class="drift-row">
+        <div class="drift-col">word count</div>
+        <div class="drift-col" style="color:var(--muted);font-size:12px">Kolmogorov-Smirnov</div>
+        <div class="drift-val ok">✓ No drift</div>
+      </div>
+      <div class="drift-row">
+        <div class="drift-col"><strong>Dataset drift detected</strong></div>
+        <div class="drift-col" style="color:var(--muted);font-size:12px">16.7% columns drifted</div>
+        <div class="drift-val ok">✓ False — model stable</div>
+      </div>
+    </div>
+    <p class="prose">
+      <strong>In production</strong> you'd run this comparison between your training data
+      and a rolling window of incoming requests. If drift is detected, the pipeline
+      automatically triggers retraining. This is the standard MLOps pattern for
+      catching <em>concept drift</em> before it degrades model accuracy.
+    </p>
+  </div>
+</div>
+
+<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">SRE Additions</div>
+    <div class="features">
+      <div class="feature"><strong>Drift detection pipeline</strong> — 4th stage after eval, runs automatically on every training run</div>
+      <div class="feature"><strong>6-column drift analysis</strong> — label, predictions, confidence, text length, word count</div>
+      <div class="feature"><strong>HTML drift report artifact</strong> — saved to artifacts/ and pushed to HF Hub for review</div>
+      <div class="feature"><strong>/health endpoint</strong> — model load status, uptime, prediction count</div>
+      <div class="feature"><strong>MLflow experiment tracking</strong> — all hyperparams and metrics logged per run</div>
+      <div class="feature"><strong>params.yaml</strong> — max_samples controls dataset size for fast iteration vs full training</div>
+      <div class="feature"><strong>Checkpoint saving</strong> — saves at every epoch, loads best model by F1 at end</div>
+      <div class="feature"><strong>Decoupled CI/CD</strong> — train and deploy workflows independent</div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why DistilBERT over full BERT or a simpler model?</div>
+        <div class="decision-a">DistilBERT is 40% smaller and 60% faster than BERT while retaining 97% of its performance. For sentiment classification on short-to-medium text it's the best trade-off between accuracy and inference cost. Full BERT would be slower without meaningful accuracy gain on IMDB reviews.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why Evidently AI for drift detection over custom code?</div>
+        <div class="decision-a">Evidently AI automatically selects the appropriate statistical test per column type (chi-squared for categorical, KS for continuous), generates a visual HTML report, and has a clean Python API. Writing equivalent drift detection from scratch would take far longer and produce worse visualizations.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why compare training vs test for drift instead of real production data?</div>
+        <div class="decision-a">This project simulates the production drift monitoring pattern. In a real deployment you'd compare training data against a rolling window of incoming requests. The test set here acts as a proxy for production traffic to demonstrate the pipeline without needing live traffic.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why add text_length and word_count to drift monitoring?</div>
+        <div class="decision-a">Input length distribution is an early signal of data source changes. If production reviews suddenly get much shorter (e.g. from a different platform), the model's confidence distribution will shift even before accuracy degrades. These features act as leading indicators.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tech Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item ml">DistilBERT</span>
+      <span class="stack-item ml">HuggingFace Trainer</span>
+      <span class="stack-item ml">Evidently AI</span>
+      <span class="stack-item">FastAPI</span>
+      <span class="stack-item">Docker</span>
+      <span class="stack-item">MLflow</span>
+      <span class="stack-item">pandas</span>
+      <span class="stack-item">scikit-learn</span>
+      <span class="stack-item sre">GitHub Actions CI/CD</span>
+      <span class="stack-item sre">Drift Detection</span>
+      <span class="stack-item sre">/health endpoint</span>
+      <span class="stack-item sre">Artifact tracking</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div style="background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p02-sentiment-drift" target="_blank" style="color:#b45309;font-weight:600">the Space</a>
+      and click <em>Restart this Space</em> (takes ~30 seconds), then use the commands below.
+    </div>
+    <div class="code-block"><pre><span class="cmt"># Predict sentiment via JSON API</span>
+<span class="fn">curl</span> -X POST https://amarshiv86-sentiment-analysis-api.hf.space/predict/json \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"text": "This movie was absolutely fantastic! Great acting and story."}'</span>
+
+<span class="cmt"># Response</span>
+{
+  <span class="str">"sentiment"</span>: <span class="str">"POSITIVE"</span>,
+  <span class="str">"confidence"</span>: 0.9987,
+  <span class="str">"latency_ms"</span>: 42
+}
+
+<span class="cmt"># Health check</span>
+<span class="fn">curl</span> https://amarshiv86-sentiment-analysis-api.hf.space/health
+
+<span class="cmt"># View drift report artifact</span>
+<span class="cmt"># artifacts/drift_report.html is in the GitHub repo</span></pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p02-sentiment-drift" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/amarshiv86/sentiment-analysis-imdb-model" target="_blank">HF Model</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p02-sentiment-drift" target="_blank">HF Space</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

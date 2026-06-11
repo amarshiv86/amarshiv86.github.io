@@ -166,8 +166,11 @@ footer{padding:32px 0;text-align:center}
     <rect x="240" y="40" width="200" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
     <text x="340" y="62" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">GitHub Push</text>
     <text x="340" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#64748b">src/ or params.yaml changed</text>
-    <!-- Arrow down from GitHub Push -->
-    <line x1="340" y1="84" x2="340" y2="112" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <!-- Arrow down then branch left/right -->
+    <line x1="340" y1="84" x2="340" y2="112" stroke="#334155" stroke-width="1.5"/>
+    <line x1="155" y1="112" x2="495" y2="112" stroke="#334155" stroke-width="1.5"/>
+    <line x1="155" y1="112" x2="155" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="495" y1="112" x2="495" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 
     <!-- ROW 2: Two workflows (y=120) -->
     <rect x="50" y="120" width="210" height="56" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
@@ -177,10 +180,6 @@ footer{padding:32px 0;text-align:center}
     <rect x="390" y="120" width="210" height="56" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
     <text x="495" y="140" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#94a3b8">Deploy workflow</text>
     <text x="495" y="160" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">triggers on api/ only</text>
-
-    <!-- Arrows from GitHub to workflows -->
-    <path d="M300 112 L155 120" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-    <path d="M380 112 L495 120" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 
     <!-- ROW 3: Pipeline steps (y=228) -->
     <line x1="155" y1="176" x2="155" y2="220" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>

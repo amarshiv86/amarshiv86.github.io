@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P01 · Australia Rain Predictor — End-to-end MLOps pipeline by Amar Singh">
+<title>P01 · AUS Weather Predictor · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.nav-links a.primary{background:var(--text);color:#fff;border-color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--green-l);color:var(--green);border:1px solid var(--green-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.green{color:var(--green)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+.prose a{color:var(--green);text-decoration:none}
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin:28px 0}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.metric-num{font-family:var(--display);font-size:28px;font-weight:700;color:var(--green);line-height:1;margin-bottom:4px}
+.metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.arch-box{background:#1a1f2e;border-radius:12px;padding:28px 32px;margin:24px 0;font-family:var(--mono);font-size:13px;line-height:2;overflow-x:auto}
+.arch-box .hl{color:#86efac}
+.arch-box .dim{color:#475569}
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--green);background:var(--green-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--green)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .kw{color:#7dd3fc}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p01-weather-predictor" target="_blank">GitHub</a>
+      
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P01 · MLOps <span class="proj-badge">Live</span></div>
+    <h1 class="proj-title">Australia Rain<br>Predictor</h1>
+    <p class="proj-subtitle">
+      End-to-end MLOps pipeline predicting whether it will rain tomorrow
+      across Australian weather stations — automated retraining, experiment
+      tracking, and live serving via FastAPI + Docker.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Model</div><div class="meta-value">RandomForest Classifier</div></div>
+      <div class="meta-item"><div class="meta-label">ROC-AUC</div><div class="meta-value green">0.855</div></div>
+      <div class="meta-item"><div class="meta-label">Dataset</div><div class="meta-value">145k rows · 49 stations</div></div>
+      <div class="meta-item"><div class="meta-label">Features</div><div class="meta-value">20 weather inputs</div></div>
+      <div class="meta-item"><div class="meta-label">Serving</div><div class="meta-value">FastAPI + Docker</div></div>
+      <div class="meta-item"><div class="meta-label">Tracking</div><div class="meta-value">MLflow</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Model Performance</div>
+    <div class="metrics">
+      <div class="metric-card"><div class="metric-num">0.855</div><div class="metric-label">ROC-AUC</div></div>
+      <div class="metric-card"><div class="metric-num">77.9%</div><div class="metric-label">Accuracy</div></div>
+      <div class="metric-card"><div class="metric-num">0.606</div><div class="metric-label">F1 Score</div></div>
+      <div class="metric-card"><div class="metric-num">75.8%</div><div class="metric-label">Recall</div></div>
+    </div>
+    <p class="prose">
+      The dataset has significant class imbalance — roughly <strong>78% No Rain, 22% Rain</strong>.
+      Accuracy alone is misleading. The model uses <strong>class_weight="balanced"</strong>
+      which improved recall from 41% to 75.8% compared to the unweighted baseline.
+      ROC-AUC of 0.855 means the model correctly ranks a rainy day above a dry day 85.5% of the time.
+    </p>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <p class="prose">Given 20 weather measurements — temperature, humidity, pressure, cloud cover,
+    wind direction and speed — the model predicts whether it will rain the following day.
+    The full pipeline runs automatically when source code or hyperparameters change.</p>
+    <ul class="steps" style="margin-top:24px">
+      <li><div class="step-num">1</div><div class="step-content"><strong>prepare.py</strong> — reads 145k rows from Bureau of Meteorology CSV, handles missing values, encodes wind directions (N/S/E/W → integers), splits train/test</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>train.py</strong> — builds sklearn Pipeline (StandardScaler → RandomForest), trains with params from params.yaml, logs run to MLflow</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>evaluate.py</strong> — computes accuracy, F1, ROC-AUC, generates confusion matrix, writes metrics.json</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>hf_upload.py</strong> — pushes model.pkl + metrics to HuggingFace Hub model registry for versioned storage</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>FastAPI app</strong> — downloads model from HF Hub on startup, serves HTML form UI + /predict/json endpoint + /health</div></li>
+    </ul>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 600" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P01 MLOps Architecture</title>
+    <desc>Pipeline from GitHub push through training workflows to HuggingFace Hub and FastAPI serving</desc>
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <!-- Background + border -->
+    <rect x="0" y="0" width="700" height="600" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="568" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- ROW 1: GitHub Push (y=40) -->
+    <rect x="240" y="40" width="200" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="62" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">GitHub Push</text>
+    <text x="340" y="94" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#64748b">src/ or params.yaml changed</text>
+    <!-- Arrow down from GitHub Push -->
+    <line x1="340" y1="84" x2="340" y2="112" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+
+    <!-- ROW 2: Two workflows (y=120) -->
+    <rect x="50" y="120" width="210" height="56" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="155" y="140" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">Train workflow</text>
+    <text x="155" y="160" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">triggers on src/ · params.yaml</text>
+
+    <rect x="390" y="120" width="210" height="56" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="495" y="140" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#94a3b8">Deploy workflow</text>
+    <text x="495" y="160" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">triggers on api/ only</text>
+
+    <!-- Arrows from GitHub to workflows -->
+    <path d="M300 112 L155 120" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <path d="M380 112 L495 120" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+
+    <!-- ROW 3: Pipeline steps (y=228) -->
+    <line x1="155" y1="176" x2="155" y2="220" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="28" y="228" width="112" height="44" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="84" y="250" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">prepare.py</text>
+    <line x1="140" y1="250" x2="156" y2="250" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="156" y="228" width="100" height="44" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="206" y="250" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">train.py</text>
+    <line x1="256" y1="250" x2="274" y2="250" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="274" y="228" width="114" height="44" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="331" y="250" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">evaluate.py</text>
+    <text x="206" y="284" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#475569">logs to MLflow</text>
+
+    <!-- ROW 4: HuggingFace Hub (y=340) -->
+    <path d="M331 272 L331 306 L340 306 L340 332" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="190" y="340" width="300" height="56" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="340" y="360" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#a78bfa">HuggingFace Hub</text>
+    <text x="340" y="380" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">model registry · versioned storage</text>
+
+    <!-- ROW 5: FastAPI (y=456) -->
+    <line x1="340" y1="396" x2="340" y2="448" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="190" y="456" width="300" height="56" rx="6" fill="#2a1a0e" stroke="#b45309" stroke-width="1"/>
+    <text x="340" y="476" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#f59e0b">FastAPI on HF Spaces</text>
+    <text x="340" y="496" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">pulls model.pkl at startup</text>
+
+    <!-- ROW 6: Endpoint pills (y=548) -->
+    <path d="M270 512 L130 540" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <path d="M340 512 L340 540" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <path d="M410 512 L550 540" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="62" y="548" width="136" height="26" rx="13" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="130" y="561" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#94a3b8">/ HTML form</text>
+    <rect x="282" y="548" width="116" height="26" rx="13" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="561" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#94a3b8">/predict/json</text>
+    <rect x="492" y="548" width="90" height="26" rx="13" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="537" y="561" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#94a3b8">/health</text>
+
+    <!-- Deploy bypass arrow — hugs right wall, skips HF Hub, enters FastAPI from right -->
+    <path d="M600 148 L658 148 L658 484 L492 484 L492 456" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+    <text x="672" y="330" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#475569" transform="rotate(90,672,330)">no retrain</text>
+    </svg>
+    <p class="prose">
+      Training and deployment are fully decoupled — pushing a new model does not redeploy
+      the API, and updating the API does not retrain the model. The Space pulls
+      <strong>model.pkl from HF Hub at startup</strong>, so it always serves the latest
+      model without rebuilding the container.
+    </p>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">SRE Additions</div>
+    <div class="features">
+      <div class="feature"><strong>/health endpoint</strong> — model status, uptime, prediction count, model repo name</div>
+      <div class="feature"><strong>/predict/json</strong> — clean REST endpoint with Pydantic validation alongside the HTML form</div>
+      <div class="feature"><strong>Latency tracking</strong> — inference time shown in UI and returned in JSON response</div>
+      <div class="feature"><strong>Prediction counter</strong> — total predictions served tracked in memory per session</div>
+      <div class="feature"><strong>Decoupled CI/CD</strong> — separate GitHub Actions workflows for training vs deployment</div>
+      <div class="feature"><strong>params.yaml</strong> — single source of truth for hyperparameters, git-tracked</div>
+      <div class="feature"><strong>class_weight="balanced"</strong> — explicit imbalance handling, not ignored</div>
+      <div class="feature"><strong>MLflow experiment tracking</strong> — every run logged and comparable</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why RandomForest over XGBoost or a neural network?</div>
+        <div class="decision-a">RandomForest handles mixed numeric/categorical features naturally, is robust to outliers, and gives calibrated probability outputs needed for the confidence score. For tabular weather data with 20 features it outperforms neural networks which need far more data to generalize.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why sklearn Pipeline instead of separate scaler + model?</div>
+        <div class="decision-a">Wrapping StandardScaler and RandomForest in a single Pipeline means the scaler is fitted only on training data and automatically applied at inference — preventing data leakage. The entire pipeline serializes into one model.pkl file.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why HF Hub as model registry instead of MLflow model registry?</div>
+        <div class="decision-a">MLflow model registry requires a running server. HF Hub is free, versioned, and publicly accessible with a Python SDK. The FastAPI app downloads the model at startup with one line — no server infrastructure needed.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why FastAPI over Gradio for serving?</div>
+        <div class="decision-a">Gradio wraps everything in its own UI with limited customization. FastAPI gives full control over the HTML, endpoints, and response format. The /predict/json REST endpoint and custom HTML form UI are only possible with FastAPI.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item">Python</span>
+      <span class="stack-item">scikit-learn</span>
+      <span class="stack-item">FastAPI</span>
+      <span class="stack-item">Docker</span>
+      <span class="stack-item">MLflow</span>
+      <span class="stack-item">HuggingFace Hub</span>
+      <span class="stack-item">Pydantic</span>
+      <span class="stack-item">NumPy · pandas</span>
+      <span class="stack-item sre">GitHub Actions CI/CD</span>
+      <span class="stack-item sre">/health endpoint</span>
+      <span class="stack-item sre">Latency tracking</span>
+      <span class="stack-item sre">Decoupled pipelines</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div style="background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p01-australia-rain-predictor" target="_blank" style="color:#b45309;font-weight:600">the Space</a>
+      and click <em>Restart this Space</em> (takes ~30 seconds), then use the curl commands below.
+    </div>
+    <p class="prose" style="margin-bottom:20px">
+      Once the Space is running, call the JSON API directly:
+    </p>
+    <div class="code-block"><pre><span class="cmt"># JSON prediction endpoint</span>
+<span class="fn">curl</span> -X POST https://amarshiv86-weather-aus-rain-api.hf.space/predict/json \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"MinTemp":13.4,"MaxTemp":22.9,"Rainfall":0.6,
+     "Evaporation":5.0,"Sunshine":7.5,"WindGustDir":"S",
+     "WindGustSpeed":44,"WindDir9am":"W","WindDir3pm":"SW",
+     "WindSpeed9am":20,"WindSpeed3pm":24,"Humidity9am":71,
+     "Humidity3pm":22,"Pressure9am":1007.7,"Pressure3pm":1007.1,
+     "Cloud9am":4,"Cloud3pm":5,"Temp9am":16.9,"Temp3pm":21.8,
+     "RainToday":0}'</span>
+
+<span class="cmt"># Response</span>
+{ <span class="str">"prediction"</span>: <span class="str">"No"</span>, <span class="str">"confidence_pct"</span>: 62.5, <span class="str">"latency_ms"</span>: 12 }
+
+<span class="cmt"># Health check</span>
+<span class="fn">curl</span> https://amarshiv86-weather-aus-rain-api.hf.space/health</pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p01-weather-predictor" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/amarshiv86/weather-aus-rain-predictor" target="_blank">HF Model</a>
+      
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

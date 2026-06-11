@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P04 · Document Q&A RAG Pipeline — LangChain + ChromaDB + Llama-3.2 by Amar Singh">
+<title>P04 · Document Q&A (RAG) · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --purple:#6d28d9; --purple-l:#f5f3ff; --purple-m:#ddd6fe;
+  --blue:#1d4ed8; --blue-l:#eff6ff; --blue-m:#bfdbfe;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--purple-l);color:var(--purple);border:1px solid var(--purple-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.purple{color:var(--purple)}
+.meta-value.green{color:var(--green)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+@media(max-width:560px){.compare-grid{grid-template-columns:1fr}}
+.compare-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+.compare-card.bad{border-top:3px solid #dc2626}
+.compare-card.good{border-top:3px solid var(--green)}
+.compare-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;font-weight:600}
+.compare-label.bad{color:#dc2626}
+.compare-label.good{color:var(--green)}
+.compare-content{font-size:13px;color:var(--muted);line-height:1.6}
+.compare-content strong{color:var(--text);font-weight:500}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--purple)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.purple{background:var(--purple-l);border-color:var(--purple-m);color:var(--purple)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+.code-block .kw{color:#7dd3fc}
+.paused-box{background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309}
+.paused-box a{color:#b45309;font-weight:600}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p04-doc-qa-rag" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P04 · RAG <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">Document Q&A<br>RAG Pipeline</h1>
+    <p class="proj-subtitle">
+      Upload any PDF and ask natural language questions. A Retrieval-Augmented Generation
+      pipeline chunks the document, embeds it into ChromaDB, retrieves the most relevant
+      passages, and uses Llama-3.2 to generate grounded answers.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">LLM</div><div class="meta-value purple">Llama-3.2-1B-Instruct</div></div>
+      <div class="meta-item"><div class="meta-label">Embeddings</div><div class="meta-value">all-MiniLM-L6-v2</div></div>
+      <div class="meta-item"><div class="meta-label">Vector store</div><div class="meta-value green">ChromaDB</div></div>
+      <div class="meta-item"><div class="meta-label">Chunk size</div><div class="meta-value">500 tokens · 50 overlap</div></div>
+      <div class="meta-item"><div class="meta-label">Retrieval</div><div class="meta-value">Top-3 chunks</div></div>
+      <div class="meta-item"><div class="meta-label">Orchestration</div><div class="meta-value">LangChain</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Why RAG -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Why RAG?</div>
+    <div class="compare-grid">
+      <div class="compare-card bad">
+        <div class="compare-label bad">❌ Without RAG</div>
+        <div class="compare-content">
+          LLM answers from training data only. For document-specific questions it either
+          <strong>hallucinates</strong> plausible-sounding wrong answers or says
+          "I don't know." It has no access to your specific document.
+        </div>
+      </div>
+      <div class="compare-card good">
+        <div class="compare-label good">✓ With RAG</div>
+        <div class="compare-content">
+          The LLM is given the <strong>actual relevant passages</strong> from your document
+          as context. It can only answer based on what's in the document —
+          grounded, accurate, and document-specific.
+        </div>
+      </div>
+    </div>
+    <p class="prose">
+      RAG solves the fundamental limitation of LLMs — they can't know what's in
+      <em>your</em> document. By retrieving relevant chunks first and passing them
+      as context, the LLM becomes a <strong>reading comprehension engine</strong>
+      rather than a knowledge recall engine.
+    </p>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>PDF extraction</strong> — pypdf reads each page and concatenates text. HTML/formatting artifacts are stripped. Empty PDFs (scanned images without OCR) are caught and reported.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>Text chunking</strong> — LangChain's RecursiveCharacterTextSplitter splits text into 500-token chunks with 50-token overlap. The overlap ensures no sentence is split across a chunk boundary, preserving context.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>Embedding</strong> — all-MiniLM-L6-v2 converts each chunk into a 384-dimensional dense vector. This model runs locally (no API cost), is fast on CPU, and is optimized for semantic similarity search.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>ChromaDB indexing</strong> — chunk vectors are stored in a local ChromaDB instance at /tmp/chroma_db. ChromaDB uses approximate nearest neighbor search for fast retrieval.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>Question retrieval</strong> — the user's question is embedded with the same model. ChromaDB returns the top-3 most semantically similar chunks using cosine similarity.</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>Grounded generation</strong> — the 3 retrieved chunks are injected into a prompt sent to Llama-3.2-1B-Instruct via HF Inference API. The prompt instructs the model to answer only from the provided context.</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Architecture diagram -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 580" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P04 RAG Pipeline Architecture</title>
+    <defs>
+      <marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <!-- Background -->
+    <rect x="0" y="0" width="700" height="580" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="548" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- Indexing path label -->
+    <text x="160" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.1em">INDEXING (on upload)</text>
+    <!-- Query path label -->
+    <text x="530" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.1em">QUERY (on question)</text>
+    <!-- Divider -->
+    <line x1="350" y1="26" x2="350" y2="554" stroke="#1e3a4a" stroke-width="1" stroke-dasharray="4 4"/>
+
+    <!-- LEFT: PDF Upload -->
+    <rect x="60" y="52" width="180" height="40" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="150" y="72" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#e2e8f0">PDF Upload</text>
+    <line x1="150" y1="92" x2="150" y2="116" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- pypdf -->
+    <rect x="60" y="116" width="180" height="40" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="150" y="136" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">pypdf — extract text</text>
+    <line x1="150" y1="156" x2="150" y2="180" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- Chunking -->
+    <rect x="40" y="180" width="220" height="52" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="150" y="200" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">RecursiveCharacterTextSplitter</text>
+    <text x="150" y="218" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">500 tokens · 50 overlap</text>
+    <line x1="150" y1="232" x2="150" y2="256" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- Embeddings -->
+    <rect x="40" y="256" width="220" height="52" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="150" y="276" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#a78bfa">all-MiniLM-L6-v2</text>
+    <text x="150" y="294" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">384-dim vectors · local CPU</text>
+    <line x1="150" y1="308" x2="150" y2="332" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- ChromaDB -->
+    <rect x="60" y="332" width="180" height="40" rx="6" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="150" y="352" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#60a5fa">ChromaDB vector store</text>
+
+    <!-- RIGHT: User Question -->
+    <rect x="450" y="52" width="190" height="40" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="545" y="72" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#e2e8f0">User Question</text>
+    <line x1="545" y1="92" x2="545" y2="116" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- Embed question -->
+    <rect x="430" y="116" width="230" height="52" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="545" y="136" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#a78bfa">all-MiniLM-L6-v2</text>
+    <text x="545" y="154" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">embed question → vector</text>
+    <line x1="545" y1="168" x2="545" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- Similarity search -->
+    <rect x="420" y="192" width="250" height="52" rx="6" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="545" y="212" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#60a5fa">ChromaDB similarity search</text>
+    <text x="545" y="230" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">cosine similarity · top-3 chunks</text>
+
+    <!-- Arrow from ChromaDB left to ChromaDB right (shared store) -->
+    <path d="M240 352 L280 352 L280 218 L420 218" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr4)"/>
+    <text x="280" y="295" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#334155" transform="rotate(90,280,295)">shared store</text>
+
+    <line x1="545" y1="244" x2="545" y2="268" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- Retrieved chunks -->
+    <rect x="420" y="268" width="250" height="40" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="545" y="288" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#94a3b8">Top-3 relevant chunks</text>
+    <line x1="545" y1="308" x2="545" y2="332" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- Llama prompt -->
+    <rect x="400" y="332" width="280" height="64" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="540" y="352" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f59e0b">Llama-3.2-1B-Instruct</text>
+    <text x="540" y="370" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">HF Inference API</text>
+    <text x="540" y="386" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#92400e">"Answer only from context below..."</text>
+    <line x1="540" y1="396" x2="540" y2="420" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+    <!-- Answer -->
+    <rect x="380" y="420" width="300" height="44" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="530" y="440" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">Grounded Answer</text>
+    <text x="530" y="456" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">based only on document content</text>
+
+    <!-- Gradio UI at bottom -->
+    <rect x="200" y="508" width="300" height="40" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="350" y="528" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#94a3b8">Gradio Chat UI</text>
+    <path d="M150 372 L150 490 L200 490 L200 528" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr4)"/>
+    <path d="M530 464 L530 490 L500 490 L500 528" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr4)"/>
+    </svg>
+
+    <p class="prose">
+      The pipeline has two phases — <strong>indexing</strong> (done once on upload) and
+      <strong>querying</strong> (done on every question). The same embedding model is used
+      in both phases to ensure the question and document vectors are in the same semantic space.
+      ChromaDB is shared between both paths — indexed chunks are retrieved during query time.
+    </p>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why all-MiniLM-L6-v2 for embeddings instead of OpenAI embeddings?</div>
+        <div class="decision-a">all-MiniLM-L6-v2 runs locally with no API cost — critical for a demo that processes arbitrary user PDFs. It's a 22M parameter model optimized for semantic similarity tasks, producing 384-dim vectors. For document Q&A retrieval it performs comparably to much larger embedding models.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why chunk_size=500 with chunk_overlap=50?</div>
+        <div class="decision-a">500 tokens fits comfortably within the LLM's context window while capturing enough context to answer most questions. The 50-token overlap prevents answers from being split across chunk boundaries — without overlap, a sentence starting near a chunk end and finishing at the next chunk start would never be retrieved as a complete unit.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why Llama-3.2-1B via HF Inference API instead of a local model?</div>
+        <div class="decision-a">Running a 1B+ parameter LLM locally on CPU takes 30-60 seconds per query — too slow for a demo. The HF Inference API serves the model on GPU infrastructure for free (with HF_TOKEN), giving sub-5-second responses. This is the correct production pattern: local embeddings + cloud LLM.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why top-3 chunks instead of more?</div>
+        <div class="decision-a">Retrieving more chunks risks including irrelevant content that confuses the LLM, a phenomenon called "lost in the middle" — LLMs tend to ignore context in the middle of long prompts. Top-3 keeps the context focused and within a reasonable prompt length for the 1B model's context window.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Features</div>
+    <div class="features">
+      <div class="feature"><strong>Any PDF</strong> — upload any text-based PDF, processed in seconds</div>
+      <div class="feature"><strong>Grounded answers</strong> — LLM instructed to answer only from document context</div>
+      <div class="feature"><strong>Hallucination guard</strong> — "I couldn't find that in the document" when not found</div>
+      <div class="feature"><strong>Chat history</strong> — multi-turn conversation maintained in Gradio chatbot</div>
+      <div class="feature"><strong>Free embeddings</strong> — all-MiniLM runs locally, zero API cost for indexing</div>
+      <div class="feature"><strong>Clear document</strong> — reset button clears ChromaDB and starts fresh</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item purple">LangChain</span>
+      <span class="stack-item purple">ChromaDB</span>
+      <span class="stack-item purple">all-MiniLM-L6-v2</span>
+      <span class="stack-item">Llama-3.2-1B-Instruct</span>
+      <span class="stack-item">HF Inference API</span>
+      <span class="stack-item">pypdf</span>
+      <span class="stack-item">Gradio</span>
+      <span class="stack-item sre">GitHub Actions CI/CD</span>
+      <span class="stack-item sre">Hallucination guard</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div class="paused-box">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p04-doc-qa-rag" target="_blank">the Space</a>
+      and click <em>Restart this Space</em> (takes ~30 seconds).
+      Note: requires HF_TOKEN set in Space secrets for Llama API access.
+    </div>
+    <div class="code-block"><pre><span class="cmt"># Run locally</span>
+git clone https://github.com/amarshiv86/p04-doc-qa-rag
+cd p04-doc-qa-rag
+pip install -r requirements.txt
+
+<span class="cmt"># Set HF token for Llama API access</span>
+<span class="kw">export</span> HF_TOKEN=hf_your_token_here
+
+python app.py
+<span class="cmt"># → Open http://localhost:7860</span>
+<span class="cmt"># 1. Upload any PDF (try a research paper or report)</span>
+<span class="cmt"># 2. Wait for "X pages, Y chunks indexed" confirmation</span>
+<span class="cmt"># 3. Ask: "What is the main topic of this document?"</span>
+<span class="cmt"># 4. Ask: "What are the key conclusions?"</span></pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p04-doc-qa-rag" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p04-doc-qa-rag" target="_blank">HF Space</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

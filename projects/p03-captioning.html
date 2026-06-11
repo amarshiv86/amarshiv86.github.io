@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P03 · Image Captioning — ViT encoder + GPT-2 decoder multimodal pipeline by Amar Singh">
+<title>P03 · Image Captioning · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --blue:#1d4ed8; --blue-l:#eff6ff; --blue-m:#bfdbfe;
+  --purple:#6d28d9; --purple-l:#f5f3ff; --purple-m:#ddd6fe;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.blue{color:var(--blue)}
+.meta-value.purple{color:var(--purple)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+.prose a{color:var(--blue);text-decoration:none}
+.prose a:hover{text-decoration:underline}
+/* Model component cards */
+.model-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+@media(max-width:560px){.model-grid{grid-template-columns:1fr}}
+.model-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+.model-card.blue{border-top:3px solid var(--blue)}
+.model-card.purple{border-top:3px solid var(--purple)}
+.model-card-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.model-card-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px}
+.model-card-desc{font-size:13px;color:var(--muted);line-height:1.6}
+/* Steps */
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+/* Features */
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+/* Decisions */
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--blue)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+/* Stack */
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.blue{background:var(--blue-l);border-color:var(--blue-m);color:var(--blue)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+/* Code */
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+/* Paused banner */
+.paused-box{background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309}
+.paused-box a{color:#b45309;font-weight:600}
+/* Caption examples */
+.caption-examples{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.caption-example{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.caption-icon{font-size:32px;line-height:1}
+.caption-text{font-size:13px;color:var(--muted);line-height:1.6}
+.caption-text strong{color:var(--text);font-weight:500;display:block;margin-bottom:4px}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p03-image-captioning" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P03 · Multimodal <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">Image Captioning</h1>
+    <p class="proj-subtitle">
+      Multimodal pipeline using a Vision Transformer (ViT) encoder and GPT-2 decoder
+      to generate natural language descriptions from images. Upload any image and
+      get AI-generated captions with adjustable beam search and caption count controls.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Encoder</div><div class="meta-value blue">ViT (Vision Transformer)</div></div>
+      <div class="meta-item"><div class="meta-label">Decoder</div><div class="meta-value purple">GPT-2</div></div>
+      <div class="meta-item"><div class="meta-label">Architecture</div><div class="meta-value">VisionEncoderDecoder</div></div>
+      <div class="meta-item"><div class="meta-label">Training data</div><div class="meta-value">COCO · 118k images</div></div>
+      <div class="meta-item"><div class="meta-label">Beam search</div><div class="meta-value">1–8 configurable</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Model components -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Model Architecture</div>
+    <p class="prose" style="margin-bottom:20px">
+      P03 uses a pre-trained <strong>VisionEncoderDecoderModel</strong> —
+      a HuggingFace architecture that bridges vision and language models.
+      The encoder and decoder are two separate specialist models connected
+      by a cross-attention mechanism:
+    </p>
+    <div class="model-grid">
+      <div class="model-card blue">
+        <div class="model-card-label">Encoder · Vision</div>
+        <div class="model-card-name">Vision Transformer (ViT)</div>
+        <div class="model-card-desc">
+          Splits the image into 16×16 pixel patches, treats each patch as a token,
+          and runs self-attention across all patches to build rich spatial representations.
+          Outputs a sequence of patch embeddings capturing both local and global image features.
+        </div>
+      </div>
+      <div class="model-card purple">
+        <div class="model-card-label">Decoder · Language</div>
+        <div class="model-card-name">GPT-2</div>
+        <div class="model-card-desc">
+          Takes the ViT patch embeddings as context via cross-attention and
+          auto-regressively generates caption tokens one at a time.
+          Beam search explores multiple candidate sequences simultaneously
+          and selects the highest-probability caption.
+        </div>
+      </div>
+    </div>
+    <p class="prose">
+      The combined model is <a href="https://huggingface.co/nlpconnect/vit-gpt2-image-captioning" target="_blank">nlpconnect/vit-gpt2-image-captioning</a>,
+      pre-trained on the COCO dataset — 118,000 images each with 5 human-written captions.
+      No custom training was done in this project — the focus is on the
+      <strong>inference pipeline, UI, and deployment</strong>.
+    </p>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>Image upload</strong> — user uploads any image via the Gradio UI. The image is loaded with PIL and converted to RGB.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>ViT encoding</strong> — the image is split into 16×16 patches, each converted to a 768-dimensional embedding. The ViT processes all patches with self-attention, producing a 196-token sequence of patch representations.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>Cross-attention</strong> — the GPT-2 decoder attends to the ViT patch embeddings to condition its text generation on the image content. Each generated token can attend to every image patch.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>Beam search</strong> — instead of greedily picking the most likely next token, beam search maintains N candidate sequences simultaneously. Higher beam width = more exploration = better captions at the cost of compute.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>Caption output</strong> — the decoder generates up to 16 tokens, producing a natural language sentence describing the image. Multiple captions can be generated to see model uncertainty.</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Architecture diagram -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 480" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P03 Image Captioning Architecture</title>
+    <defs>
+      <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <!-- Background -->
+    <rect x="0" y="0" width="700" height="480" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="448" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- Input image -->
+    <rect x="260" y="36" width="160" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="58" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">Image Input</text>
+    <text x="340" y="88" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#64748b">any image · PNG/JPG/WEBP</text>
+    <line x1="340" y1="80" x2="340" y2="108" stroke="#334155" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+    <!-- ViT Encoder -->
+    <rect x="120" y="116" width="440" height="76" rx="6" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="340" y="140" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#60a5fa">ViT Encoder — Vision Transformer</text>
+    <text x="230" y="165" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">Split into 16×16 patches</text>
+    <text x="340" y="165" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#475569">→</text>
+    <text x="460" y="165" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">Self-attention across patches</text>
+    <text x="340" y="180" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#1d4ed8">outputs 196 patch embeddings (768-dim each)</text>
+    <line x1="340" y1="192" x2="340" y2="218" stroke="#334155" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+    <!-- Cross attention label -->
+    <text x="340" y="212" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#475569">cross-attention</text>
+
+    <!-- GPT-2 Decoder -->
+    <rect x="120" y="226" width="440" height="76" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="340" y="250" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#a78bfa">GPT-2 Decoder</text>
+    <text x="230" y="275" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">Attends to ViT embeddings</text>
+    <text x="340" y="275" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#475569">→</text>
+    <text x="460" y="275" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">Auto-regressive generation</text>
+    <text x="340" y="290" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6d28d9">generates tokens one at a time</text>
+    <line x1="340" y1="302" x2="340" y2="328" stroke="#334155" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+    <!-- Beam Search -->
+    <rect x="200" y="336" width="280" height="44" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="340" y="355" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">Beam Search</text>
+    <text x="340" y="371" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">width 1–8 · explores N candidates simultaneously</text>
+    <line x1="340" y1="380" x2="340" y2="406" stroke="#334155" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+    <!-- Output -->
+    <rect x="160" y="414" width="360" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="432" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">"a dog playing in the park"</text>
+    <text x="340" y="448" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">natural language caption output</text>
+    </svg>
+  </div>
+</div>
+
+<!-- Caption examples -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Example Captions</div>
+    <p class="prose" style="margin-bottom:20px">
+      The model generates descriptive captions covering objects, actions, spatial relationships,
+      and scene context — learned from 118k COCO image-caption pairs:
+    </p>
+    <div class="caption-examples">
+      <div class="caption-example">
+        <div class="caption-icon">🐕</div>
+        <div class="caption-text">
+          <strong>Image: dog running in a field</strong>
+          "a dog is running through a grassy field"
+        </div>
+      </div>
+      <div class="caption-example">
+        <div class="caption-icon">🏙️</div>
+        <div class="caption-text">
+          <strong>Image: city street at night</strong>
+          "a city street at night with cars and buildings"
+        </div>
+      </div>
+      <div class="caption-example">
+        <div class="caption-icon">🍕</div>
+        <div class="caption-text">
+          <strong>Image: pizza on a table</strong>
+          "a pizza sitting on top of a wooden table"
+        </div>
+      </div>
+    </div>
+    <p class="prose">
+      Increasing beam search width improves caption quality — beam width 4 typically produces
+      more grammatically complete sentences than width 1 (greedy decoding).
+      Generating multiple captions lets you see the top-N hypotheses the model considered.
+    </p>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Features</div>
+    <div class="features">
+      <div class="feature"><strong>Beam search control</strong> — width 1–8 via slider, higher = more accurate</div>
+      <div class="feature"><strong>Multiple captions</strong> — generate up to 4 candidates to compare confidence</div>
+      <div class="feature"><strong>GPU auto-detect</strong> — uses CUDA if available, falls back to CPU</div>
+      <div class="feature"><strong>Any image format</strong> — PNG, JPG, WEBP all supported via PIL</div>
+      <div class="feature"><strong>Pre-trained model</strong> — no training required, downloads from HF Hub</div>
+      <div class="feature"><strong>Auto-deploy</strong> — GitHub Actions deploys to HF Spaces on every push</div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why use a pre-trained model instead of training from scratch?</div>
+        <div class="decision-a">Training an image captioning model from scratch requires large GPU compute (days on A100s) and a massive dataset. The pre-trained nlpconnect/vit-gpt2 model was trained on COCO's 118k images. For a portfolio project demonstrating multimodal inference, using a strong pre-trained model and building the deployment pipeline around it is the right engineering trade-off.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why ViT + GPT-2 over BLIP or other captioning models?</div>
+        <div class="decision-a">ViT+GPT-2 cleanly demonstrates the encoder-decoder architecture — two separate specialist models connected by cross-attention. BLIP uses a more complex bootstrapped training approach that's harder to explain. For a portfolio project, architectural clarity matters as much as benchmark performance.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why expose beam search width as a user control?</div>
+        <div class="decision-a">Beam search width is a core inference hyperparameter. Exposing it lets users experience the quality-speed trade-off directly — width 1 is instant but often produces clipped sentences, width 8 takes 2x longer but produces complete descriptive captions. This makes the demo educational, not just functional.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item blue">ViT (Vision Transformer)</span>
+      <span class="stack-item blue">GPT-2</span>
+      <span class="stack-item blue">VisionEncoderDecoderModel</span>
+      <span class="stack-item">HuggingFace Transformers</span>
+      <span class="stack-item">Gradio</span>
+      <span class="stack-item">PIL / Pillow</span>
+      <span class="stack-item">COCO dataset</span>
+      <span class="stack-item sre">GitHub Actions CI/CD</span>
+      <span class="stack-item sre">Auto-deploy to HF Spaces</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div class="paused-box">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p03-image-captioning" target="_blank">the Space</a>
+      and click <em>Restart this Space</em> (takes ~30 seconds).
+    </div>
+    <p class="prose" style="margin-bottom:16px">Once running, upload any image and adjust:</p>
+    <div class="code-block"><pre><span class="cmt"># Run locally</span>
+git clone https://github.com/amarshiv86/p03-image-captioning
+cd p03-image-captioning
+pip install -r requirements.txt
+python app.py
+<span class="cmt"># → Gradio UI opens at http://localhost:7860</span>
+<span class="cmt"># Upload any image → set beam width → Generate Captions</span>
+
+<span class="cmt"># Try with a test image</span>
+<span class="cmt"># 1. Upload a photo of a dog, a city, food, or any scene</span>
+<span class="cmt"># 2. Set "Number of Captions" to 3</span>
+<span class="cmt"># 3. Set "Beam Search Width" to 4</span>
+<span class="cmt"># 4. Click Generate — compare the 3 candidate captions</span></pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p03-image-captioning" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/nlpconnect/vit-gpt2-image-captioning" target="_blank">HF Model</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p03-image-captioning" target="_blank">HF Space</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

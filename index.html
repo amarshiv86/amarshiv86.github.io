@@ -179,14 +179,19 @@ nav {
   color: var(--green);
   font-weight: 600;
 }
-.hero-bio {
-  font-size: 15px;
-  color: var(--muted);
-  max-width: 560px;
-  line-height: 1.8;
-  margin-bottom: 36px;
-}
+.hero-bio { color: var(--muted); font-size: 15px; max-width: 560px; line-height: 1.8; margin-bottom: 16px; }
 .hero-bio strong { color: var(--text); font-weight: 500; }
+.hero-bio-ai {
+  color: var(--green);
+  font-size: 13px;
+  max-width: 560px;
+  line-height: 1.7;
+  margin-bottom: 36px;
+  padding: 10px 14px;
+  background: var(--green-l);
+  border-left: 3px solid var(--green);
+  border-radius: 0 6px 6px 0;
+}
 
 .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
 .btn {
@@ -578,9 +583,13 @@ footer {
       <p class="hero-bio">
         <strong>10+ years</strong> designing, operating, and scaling distributed systems
         on bare metal (KVM, QEMU), private cloud (OpenStack), and public cloud (GCP, AWS).
-        I lead SRE for critical microservices at Netskope — Kubernetes,
-        Terraform, Prometheus, 24×7 on-call, sub-5-minute response times.
+        I lead SRE for critical microservices at Netskope with Kubernetes,
+        Terraform, Prometheus, 24×7 on-call, and sub-5-minute response times.
         Built a 99.9%+ SLA track record across three companies.
+      </p>
+      <p class="hero-bio hero-bio-ai">
+        AI/ML enthusiast applying ML to SRE: reduced Zabbix alert noise with anomaly detection
+        and built Claude-powered automation for repetitive ops tasks.
       </p>
       <div class="hero-btns">
         <a href="#projects" class="btn btn-dark">View Projects</a>

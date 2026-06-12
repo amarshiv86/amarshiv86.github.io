@@ -125,27 +125,6 @@ footer{padding:32px 0;text-align:center}
 </nav>
 
 <div class="wrap">
-  <div class="proj-header">
-    <div class="proj-eyebrow">P12 · MCP · Capstone <span class="proj-badge">Live ✓</span></div>
-    <h1 class="proj-title">SRE Ops MCP Server</h1>
-    <p class="proj-subtitle">
-      Custom MCP (Model Context Protocol) server exposing 6 SRE tools as
-      LLM-callable actions via JSON-RPC 2.0. Works with Claude Desktop via
-      stdio transport — ask Claude "What's burning right now?" and it calls
-      your real SRE tools automatically. Every call audit logged.
-    </p>
-    <div class="proj-meta">
-      <div class="meta-item"><div class="meta-label">Protocol</div><div class="meta-value purple">MCP · JSON-RPC 2.0</div></div>
-      <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-value green">6 SRE tools</div></div>
-      <div class="meta-item"><div class="meta-label">Transport</div><div class="meta-value">stdio + HTTP</div></div>
-      <div class="meta-item"><div class="meta-label">Audit log</div><div class="meta-value green">Every call logged</div></div>
-      <div class="meta-item"><div class="meta-label">Compatible</div><div class="meta-value">Claude Desktop</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- What MCP is -->
-<div class="wrap">
   <div class="section">
     <div class="section-title">What is MCP?</div>
     <p class="prose">
@@ -172,52 +151,6 @@ footer{padding:32px 0;text-align:center}
     </p>
   </div>
 </div>
-
-<!-- 6 Tools -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">6 SRE Tools</div>
-    <p class="prose" style="margin-bottom:20px">
-      Each tool is registered with a name, description, and JSON Schema for
-      argument validation. The MCP server advertises them via <code>tools/list</code>
-      so any client knows what's available:
-    </p>
-    <div class="tools-grid">
-      <div class="tool-row">
-        <div class="tool-name">get_slo_status</div>
-        <div class="tool-desc">SLO burn rate and error budget for a service. Returns status CRITICAL/WARNING/ELEVATED/OK with burn rate, budget remaining %, and recommended action.</div>
-        <div class="tool-args">service_name: str</div>
-      </div>
-      <div class="tool-row">
-        <div class="tool-name">get_runbook</div>
-        <div class="tool-desc">Fetch runbook steps for an alert. Fuzzy match on alert name — "HighErrorRate" or "high error rate" both work. Returns immediate steps and escalation path.</div>
-        <div class="tool-args">alert_name: str</div>
-      </div>
-      <div class="tool-row">
-        <div class="tool-name">query_alerts</div>
-        <div class="tool-desc">Recent firing alerts filtered by severity. Returns total count and structured alert list with service, duration, and summary.</div>
-        <div class="tool-args">severity: all|critical|warning</div>
-      </div>
-      <div class="tool-row">
-        <div class="tool-name">create_incident</div>
-        <div class="tool-desc">Create a new incident record in the in-memory store. Generates INC-XXXXXX ID, sets status to "investigating", initializes timeline.</div>
-        <div class="tool-args">title, severity, service, description</div>
-      </div>
-      <div class="tool-row">
-        <div class="tool-name">get_incident_timeline</div>
-        <div class="tool-desc">Full timeline of events for an incident — alert fired, on-call paged, acknowledged, root cause found, resolution. Falls back to mock timeline for demo IDs.</div>
-        <div class="tool-args">incident_id: str</div>
-      </div>
-      <div class="tool-row">
-        <div class="tool-name">summarize_incident</div>
-        <div class="tool-desc"><strong>LLM-powered</strong> — Qwen2.5-0.5B generates a 3-sentence incident summary from the timeline. Covers what happened, root cause, and resolution. Heuristic fallback in CI.</div>
-        <div class="tool-args">incident_id: str</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Architecture -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Architecture</div>
@@ -295,8 +228,6 @@ footer{padding:32px 0;text-align:center}
     </svg>
   </div>
 </div>
-
-<!-- How it works -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">How it works</div>
@@ -310,8 +241,48 @@ footer{padding:32px 0;text-align:center}
     </ul>
   </div>
 </div>
-
-<!-- JSON-RPC protocol -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">6 SRE Tools</div>
+    <p class="prose" style="margin-bottom:20px">
+      Each tool is registered with a name, description, and JSON Schema for
+      argument validation. The MCP server advertises them via <code>tools/list</code>
+      so any client knows what's available:
+    </p>
+    <div class="tools-grid">
+      <div class="tool-row">
+        <div class="tool-name">get_slo_status</div>
+        <div class="tool-desc">SLO burn rate and error budget for a service. Returns status CRITICAL/WARNING/ELEVATED/OK with burn rate, budget remaining %, and recommended action.</div>
+        <div class="tool-args">service_name: str</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">get_runbook</div>
+        <div class="tool-desc">Fetch runbook steps for an alert. Fuzzy match on alert name — "HighErrorRate" or "high error rate" both work. Returns immediate steps and escalation path.</div>
+        <div class="tool-args">alert_name: str</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">query_alerts</div>
+        <div class="tool-desc">Recent firing alerts filtered by severity. Returns total count and structured alert list with service, duration, and summary.</div>
+        <div class="tool-args">severity: all|critical|warning</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">create_incident</div>
+        <div class="tool-desc">Create a new incident record in the in-memory store. Generates INC-XXXXXX ID, sets status to "investigating", initializes timeline.</div>
+        <div class="tool-args">title, severity, service, description</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">get_incident_timeline</div>
+        <div class="tool-desc">Full timeline of events for an incident — alert fired, on-call paged, acknowledged, root cause found, resolution. Falls back to mock timeline for demo IDs.</div>
+        <div class="tool-args">incident_id: str</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">summarize_incident</div>
+        <div class="tool-desc"><strong>LLM-powered</strong> — Qwen2.5-0.5B generates a 3-sentence incident summary from the timeline. Covers what happened, root cause, and resolution. Heuristic fallback in CI.</div>
+        <div class="tool-args">incident_id: str</div>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">JSON-RPC 2.0 Protocol</div>
@@ -347,8 +318,6 @@ footer{padding:32px 0;text-align:center}
    You have 90.8% error budget remaining but should investigate soon."</span></pre></div>
   </div>
 </div>
-
-<!-- Audit logging -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Audit Logging</div>
@@ -371,8 +340,6 @@ footer{padding:32px 0;text-align:center}
     </p>
   </div>
 </div>
-
-<!-- Claude Desktop config -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Claude Desktop Integration</div>
@@ -398,8 +365,6 @@ footer{padding:32px 0;text-align:center}
 <span class="cmt">// "Summarize incident INC-A3F2C1"</span></pre></div>
   </div>
 </div>
-
-<!-- SRE Additions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">SRE Additions</div>
@@ -415,8 +380,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Key Design Decisions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Key Design Decisions</div>
@@ -440,8 +403,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Stack -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Tech Stack</div>
@@ -459,8 +420,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Try it -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
@@ -486,18 +445,22 @@ pytest tests/ -v
 <span class="cmt"># Ask: "What's burning right now?"</span></pre></div>
   </div>
 </div>
-
 <div class="wrap">
-  <footer>
-    <div class="footer-links">
-      <a href="../index.html">← Portfolio</a>
-      <a href="https://github.com/amarshiv86/p12-sre-mcp" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/spaces/amarshiv86/p12-sre-mcp" target="_blank">Live Demo</a>
-      <a href="https://huggingface.co/datasets/amarshiv86/p12-sre-mcp-dataset" target="_blank">HF Dataset</a>
+  <div class="proj-header">
+    <div class="proj-eyebrow">P12 · MCP · Capstone <span class="proj-badge">Live ✓</span></div>
+    <h1 class="proj-title">SRE Ops MCP Server</h1>
+    <p class="proj-subtitle">
+      Custom MCP (Model Context Protocol) server exposing 6 SRE tools as
+      LLM-callable actions via JSON-RPC 2.0. Works with Claude Desktop via
+      stdio transport — ask Claude "What's burning right now?" and it calls
+      your real SRE tools automatically. Every call audit logged.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Protocol</div><div class="meta-value purple">MCP · JSON-RPC 2.0</div></div>
+      <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-value green">6 SRE tools</div></div>
+      <div class="meta-item"><div class="meta-label">Transport</div><div class="meta-value">stdio + HTTP</div></div>
+      <div class="meta-item"><div class="meta-label">Audit log</div><div class="meta-value green">Every call logged</div></div>
+      <div class="meta-item"><div class="meta-label">Compatible</div><div class="meta-value">Claude Desktop</div></div>
     </div>
-    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
-  </footer>
+  </div>
 </div>
-
-</body>
-</html>

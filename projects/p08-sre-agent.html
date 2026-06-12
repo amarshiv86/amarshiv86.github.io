@@ -120,28 +120,6 @@ footer{padding:32px 0;text-align:center}
 </nav>
 
 <div class="wrap">
-  <div class="proj-header">
-    <div class="proj-eyebrow">P08 · Agents <span class="proj-badge">Paused</span></div>
-    <h1 class="proj-title">SRE Ops Agent with Tools</h1>
-    <p class="proj-subtitle">
-      ReAct agent that answers SRE on-call queries using 5 real tools —
-      SLO status, runbook lookup, alert queries, error budget calculation,
-      and real HTTP health checks. External calls require human-in-the-loop
-      approval before executing. Every step is traced and visible.
-    </p>
-    <div class="proj-meta">
-      <div class="meta-item"><div class="meta-label">Pattern</div><div class="meta-value red">ReAct (Reason+Act)</div></div>
-      <div class="meta-item"><div class="meta-label">LLM</div><div class="meta-value">Qwen2.5-0.5B · local</div></div>
-      <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-value green">5 tools</div></div>
-      <div class="meta-item"><div class="meta-label">Max steps</div><div class="meta-value">5 per query</div></div>
-      <div class="meta-item"><div class="meta-label">Safety</div><div class="meta-value">Human-in-the-loop</div></div>
-      <div class="meta-item"><div class="meta-label">Trace</div><div class="meta-value">Full step visibility</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- ReAct Pattern -->
-<div class="wrap">
   <div class="section">
     <div class="section-title">The ReAct Pattern</div>
     <p class="prose" style="margin-bottom:24px">
@@ -178,88 +156,6 @@ footer{padding:32px 0;text-align:center}
     </p>
   </div>
 </div>
-
-<!-- Tools -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">5 Tools</div>
-    <p class="prose" style="margin-bottom:20px">
-      Each tool is a Python function registered in the TOOLS dict with a
-      description, argument spec, and <code>requires_approval</code> flag:
-    </p>
-    <div class="tools-grid">
-      <div class="tool-card">
-        <div class="tool-name">check_slo_status</div>
-        <div class="tool-desc">Checks SLO burn rate and error budget for a service. Returns status (OK/ELEVATED/WARNING/CRITICAL), burn rate 1h/6h, budget remaining %. <strong>Mock Prometheus data</strong> for 4 services.</div>
-        <div class="tool-badge safe">No approval</div>
-      </div>
-      <div class="tool-card">
-        <div class="tool-name">get_runbook</div>
-        <div class="tool-desc">Fetches runbook steps for an alert name. <strong>Real file lookup</strong> from runbooks.jsonl — supports exact and fuzzy matching. Returns alert name, severity, steps, escalation path.</div>
-        <div class="tool-badge safe">No approval</div>
-      </div>
-      <div class="tool-card">
-        <div class="tool-name">query_recent_alerts</div>
-        <div class="tool-desc">Returns currently firing alerts filtered by severity. <strong>Mock PagerDuty data</strong> — 3 realistic alerts with service, duration, summary. Filterable by critical/warning/all.</div>
-        <div class="tool-badge safe">No approval</div>
-      </div>
-      <div class="tool-card">
-        <div class="tool-name">calculate_error_budget</div>
-        <div class="tool-desc"><strong>Pure math</strong> — calculates allowed downtime for any SLO target and window. Returns budget in minutes and hours, consumed vs remaining. Always works, no dependencies.</div>
-        <div class="tool-badge safe">No approval</div>
-      </div>
-      <div class="tool-card">
-        <div class="tool-name">check_service_health</div>
-        <div class="tool-desc"><strong>Real HTTP call</strong> to any URL — returns status code, latency, response size. The only tool that makes external network calls, which is why it requires human approval before executing.</div>
-        <div class="tool-badge approval">⚠ Requires approval</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Human-in-the-loop -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Human-in-the-Loop Approval</div>
-    <p class="prose" style="margin-bottom:20px">
-      When the agent decides to call <code>check_service_health</code>,
-      it pauses and presents the pending call to the user for approval.
-      The agent state is preserved — approve continues from exactly where
-      it stopped, reject sends the error back as a tool result:
-    </p>
-    <div class="trace-box"><pre><span class="thought">🤔 Thought: I need to check the auth-service error rate first.</span>
-
-<span class="tool">🔧 Tool: check_slo_status → {"service_name": "auth-service"}</span>
-
-<span class="result">✅ Result (2ms): {
-  "service": "auth-service",
-  "status": "CRITICAL",
-  "burn_rate_1h": 4.5,
-  "budget_remaining_pct": 97.2,
-  "action_required": "Investigate — exhausts budget in &lt;5 days"
-}</span>
-
-<span class="thought">🤔 Thought: CRITICAL status. Let me check the health endpoint directly.</span>
-
-<span class="tool">🔧 Tool: check_service_health → {"url": "https://auth-service.internal/health"}</span>
-
-<span class="warn">⚠️ Approval needed for: check_service_health({"url": "https://auth-service.internal/health"})</span>
-
-<span class="approve">✅ Approved: check_service_health(...)</span>
-
-<span class="result">✅ Result (312ms): {
-  "status_code": 200,
-  "healthy": true,
-  "latency_ms": 312
-}</span>
-
-<span class="answer">ANSWER: auth-service is CRITICAL — burn rate 4.5x (SLO: 99.9%).
-Health endpoint responds 200 in 312ms. Error rate 0.45% vs 0.1% threshold.
-Action: check recent deployments and review slow query logs.</span></pre></div>
-  </div>
-</div>
-
-<!-- Architecture -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Architecture</div>
@@ -446,8 +342,82 @@ Action: check recent deployments and review slow query logs.</span></pre></div>
     </svg>
   </div>
 </div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">5 Tools</div>
+    <p class="prose" style="margin-bottom:20px">
+      Each tool is a Python function registered in the TOOLS dict with a
+      description, argument spec, and <code>requires_approval</code> flag:
+    </p>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name">check_slo_status</div>
+        <div class="tool-desc">Checks SLO burn rate and error budget for a service. Returns status (OK/ELEVATED/WARNING/CRITICAL), burn rate 1h/6h, budget remaining %. <strong>Mock Prometheus data</strong> for 4 services.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">get_runbook</div>
+        <div class="tool-desc">Fetches runbook steps for an alert name. <strong>Real file lookup</strong> from runbooks.jsonl — supports exact and fuzzy matching. Returns alert name, severity, steps, escalation path.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">query_recent_alerts</div>
+        <div class="tool-desc">Returns currently firing alerts filtered by severity. <strong>Mock PagerDuty data</strong> — 3 realistic alerts with service, duration, summary. Filterable by critical/warning/all.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">calculate_error_budget</div>
+        <div class="tool-desc"><strong>Pure math</strong> — calculates allowed downtime for any SLO target and window. Returns budget in minutes and hours, consumed vs remaining. Always works, no dependencies.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">check_service_health</div>
+        <div class="tool-desc"><strong>Real HTTP call</strong> to any URL — returns status code, latency, response size. The only tool that makes external network calls, which is why it requires human approval before executing.</div>
+        <div class="tool-badge approval">⚠ Requires approval</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Human-in-the-Loop Approval</div>
+    <p class="prose" style="margin-bottom:20px">
+      When the agent decides to call <code>check_service_health</code>,
+      it pauses and presents the pending call to the user for approval.
+      The agent state is preserved — approve continues from exactly where
+      it stopped, reject sends the error back as a tool result:
+    </p>
+    <div class="trace-box"><pre><span class="thought">🤔 Thought: I need to check the auth-service error rate first.</span>
 
-<!-- SRE Additions -->
+<span class="tool">🔧 Tool: check_slo_status → {"service_name": "auth-service"}</span>
+
+<span class="result">✅ Result (2ms): {
+  "service": "auth-service",
+  "status": "CRITICAL",
+  "burn_rate_1h": 4.5,
+  "budget_remaining_pct": 97.2,
+  "action_required": "Investigate — exhausts budget in &lt;5 days"
+}</span>
+
+<span class="thought">🤔 Thought: CRITICAL status. Let me check the health endpoint directly.</span>
+
+<span class="tool">🔧 Tool: check_service_health → {"url": "https://auth-service.internal/health"}</span>
+
+<span class="warn">⚠️ Approval needed for: check_service_health({"url": "https://auth-service.internal/health"})</span>
+
+<span class="approve">✅ Approved: check_service_health(...)</span>
+
+<span class="result">✅ Result (312ms): {
+  "status_code": 200,
+  "healthy": true,
+  "latency_ms": 312
+}</span>
+
+<span class="answer">ANSWER: auth-service is CRITICAL — burn rate 4.5x (SLO: 99.9%).
+Health endpoint responds 200 in 312ms. Error rate 0.45% vs 0.1% threshold.
+Action: check recent deployments and review slow query logs.</span></pre></div>
+  </div>
+</div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">SRE Additions</div>
@@ -463,8 +433,6 @@ Action: check recent deployments and review slow query logs.</span></pre></div>
     </div>
   </div>
 </div>
-
-<!-- Key Design Decisions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Key Design Decisions</div>
@@ -488,8 +456,6 @@ Action: check recent deployments and review slow query logs.</span></pre></div>
     </div>
   </div>
 </div>
-
-<!-- Stack -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Tech Stack</div>
@@ -508,8 +474,6 @@ Action: check recent deployments and review slow query logs.</span></pre></div>
     </div>
   </div>
 </div>
-
-<!-- Try it -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
@@ -536,17 +500,23 @@ python hf_space/app.py
 pytest tests/ -v</pre></div>
   </div>
 </div>
-
 <div class="wrap">
-  <footer>
-    <div class="footer-links">
-      <a href="../index.html">← Portfolio</a>
-      <a href="https://github.com/amarshiv86/p08-sre-agent" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/spaces/amarshiv86/p08-sre-agent" target="_blank">HF Space</a>
+  <div class="proj-header">
+    <div class="proj-eyebrow">P08 · Agents <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">SRE Ops Agent with Tools</h1>
+    <p class="proj-subtitle">
+      ReAct agent that answers SRE on-call queries using 5 real tools —
+      SLO status, runbook lookup, alert queries, error budget calculation,
+      and real HTTP health checks. External calls require human-in-the-loop
+      approval before executing. Every step is traced and visible.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Pattern</div><div class="meta-value red">ReAct (Reason+Act)</div></div>
+      <div class="meta-item"><div class="meta-label">LLM</div><div class="meta-value">Qwen2.5-0.5B · local</div></div>
+      <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-value green">5 tools</div></div>
+      <div class="meta-item"><div class="meta-label">Max steps</div><div class="meta-value">5 per query</div></div>
+      <div class="meta-item"><div class="meta-label">Safety</div><div class="meta-value">Human-in-the-loop</div></div>
+      <div class="meta-item"><div class="meta-label">Trace</div><div class="meta-value">Full step visibility</div></div>
     </div>
-    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
-  </footer>
+  </div>
 </div>
-
-</body>
-</html>

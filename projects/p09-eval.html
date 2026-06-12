@@ -122,119 +122,6 @@ footer{padding:32px 0;text-align:center}
 </nav>
 
 <div class="wrap">
-  <div class="proj-header">
-    <div class="proj-eyebrow">P09 · Evals <span class="proj-badge">Live ✓</span></div>
-    <h1 class="proj-title">LLM Eval Framework</h1>
-    <p class="proj-subtitle">
-      Generic evaluation framework for LLM responses using three complementary
-      methods — ROUGE, LLM-as-judge, and a custom domain rubric. SQLite tracks
-      every run for regression detection. GitHub Actions CI gate blocks deploy
-      if the composite score drops more than 5%.
-    </p>
-    <div class="proj-meta">
-      <div class="meta-item"><div class="meta-label">Methods</div><div class="meta-value green">ROUGE · LLM Judge · Rubric</div></div>
-      <div class="meta-item"><div class="meta-label">Pass threshold</div><div class="meta-value">6.0 / 10</div></div>
-      <div class="meta-item"><div class="meta-label">CI gate</div><div class="meta-value green">Blocks on &gt;5% drop</div></div>
-      <div class="meta-item"><div class="meta-label">Score history</div><div class="meta-value">SQLite</div></div>
-      <div class="meta-item"><div class="meta-label">Categories</div><div class="meta-value">general · SRE · RAG</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- Three eval methods -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Three Complementary Eval Methods</div>
-    <p class="prose" style="margin-bottom:20px">
-      No single method is sufficient — ROUGE misses semantic quality, LLM judges
-      have bias, rubrics miss edge cases. Combining all three gives a more robust
-      composite score:
-    </p>
-    <div class="method-grid">
-      <div class="method-card llm">
-        <div class="method-weight">40%</div>
-        <div class="method-name">LLM-as-Judge</div>
-        <div class="method-desc">Local Qwen2.5-0.5B scores each response 0–10 with reasoning. Falls back to heuristic (ROUGE-based) in CI where no model is loaded — no blocked pipelines.</div>
-      </div>
-      <div class="method-card rubric">
-        <div class="method-weight">35%</div>
-        <div class="method-name">Custom Rubric</div>
-        <div class="method-desc">Domain-specific heuristic scoring across dimensions like accuracy, actionability, completeness. Three rubric variants: general, SRE, and RAG. No model required.</div>
-      </div>
-      <div class="method-card rouge">
-        <div class="method-weight">25%</div>
-        <div class="method-name">ROUGE</div>
-        <div class="method-desc">Text overlap baseline using ROUGE-1, ROUGE-2, and ROUGE-L. Fast, deterministic, always consistent. Acts as a sanity check on the other two methods.</div>
-      </div>
-    </div>
-    <p class="prose">
-      Composite score = <strong>ROUGE (25%) + LLM Judge (40%) + Rubric (35%)</strong>.
-      A response passes if the composite reaches <strong>6.0 / 10</strong>.
-    </p>
-  </div>
-</div>
-
-<!-- Custom Rubric -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Custom SRE Rubric</div>
-    <p class="prose" style="margin-bottom:20px">
-      The rubric has three domain-specific variants. The <strong>SRE category</strong>
-      explicitly checks for kubectl commands, escalation paths, and actionable steps —
-      things generic eval frameworks miss entirely:
-    </p>
-    <div class="rubric-grid">
-      <div class="rubric-cat">
-        <div class="rubric-cat-title">General</div>
-        <div class="rubric-dim"><span class="rubric-dim-name">accuracy</span><span class="rubric-dim-weight">35%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">completeness</span><span class="rubric-dim-weight">25%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">clarity</span><span class="rubric-dim-weight">20%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">conciseness</span><span class="rubric-dim-weight">20%</span></div>
-      </div>
-      <div class="rubric-cat">
-        <div class="rubric-cat-title">SRE Domain</div>
-        <div class="rubric-dim"><span class="rubric-dim-name">accuracy</span><span class="rubric-dim-weight">30%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">actionability</span><span class="rubric-dim-weight">30%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">completeness</span><span class="rubric-dim-weight">20%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">escalation</span><span class="rubric-dim-weight">20%</span></div>
-      </div>
-      <div class="rubric-cat">
-        <div class="rubric-cat-title">RAG</div>
-        <div class="rubric-dim"><span class="rubric-dim-name">faithfulness</span><span class="rubric-dim-weight">35%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">relevance</span><span class="rubric-dim-weight">30%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">completeness</span><span class="rubric-dim-weight">20%</span></div>
-        <div class="rubric-dim"><span class="rubric-dim-name">hallucination</span><span class="rubric-dim-weight">15%</span></div>
-      </div>
-    </div>
-    <p class="prose">
-      The SRE rubric's <strong>actionability</strong> dimension checks for kubectl, grep,
-      systemctl, docker, helm, and prometheus commands. The <strong>escalation</strong>
-      dimension checks for words like "escalate", "page", "on-call", "severity".
-      Generic eval frameworks score these the same as any other text — the SRE rubric
-      rewards domain-appropriate responses.
-    </p>
-  </div>
-</div>
-
-<!-- Pipeline -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Evaluation Pipeline</div>
-    <ul class="steps">
-      <li><div class="step-num">1</div><div class="step-content"><strong>Load test cases</strong> — reads test_cases.jsonl. Each case has: id, question, reference_answer, generated_answer, category (general/SRE/RAG).</div></li>
-      <li><div class="step-num">2</div><div class="step-content"><strong>ROUGE scoring</strong> — rouge_scorer computes ROUGE-1/2/L F1 scores against the reference answer. Fast, no model needed.</div></li>
-      <li><div class="step-num">3</div><div class="step-content"><strong>LLM judge</strong> — Qwen2.5-0.5B prompted to score 0–10 with a one-line reason. Falls back to ROUGE-based heuristic if no model loaded (CI mode).</div></li>
-      <li><div class="step-num">4</div><div class="step-content"><strong>Rubric scoring</strong> — heuristic scoring across 4 domain dimensions based on word overlap, length ratio, command detection, and escalation keywords.</div></li>
-      <li><div class="step-num">5</div><div class="step-content"><strong>Composite score</strong> — weighted average: ROUGE 25% + LLM judge 40% + rubric 35%. Pass if ≥ 6.0/10.</div></li>
-      <li><div class="step-num">6</div><div class="step-content"><strong>Save to SQLite</strong> — every run saved to eval_history.db with all per-test scores and run summary. Used by P10 Observability Dashboard.</div></li>
-      <li><div class="step-num">7</div><div class="step-content"><strong>Regression check</strong> — compares current avg_composite against previous run. If drop &gt; 5%, CI gate fails and deployment is blocked.</div></li>
-      <li><div class="step-num">8</div><div class="step-content"><strong>Markdown report</strong> — generates eval_report.md with per-test table, regression status, and score weights.</div></li>
-    </ul>
-  </div>
-</div>
-
-<!-- Architecture -->
-<div class="wrap">
   <div class="section">
     <div class="section-title">Architecture</div>
     <svg width="100%" viewBox="0 0 700 500" role="img" style="margin:24px 0;border-radius:12px">
@@ -315,8 +202,6 @@ footer{padding:32px 0;text-align:center}
     </svg>
   </div>
 </div>
-
-<!-- CI Gate -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">CI Gate — How it works</div>
@@ -345,8 +230,92 @@ footer{padding:32px 0;text-align:center}
     </p>
   </div>
 </div>
-
-<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Three Complementary Eval Methods</div>
+    <p class="prose" style="margin-bottom:20px">
+      No single method is sufficient — ROUGE misses semantic quality, LLM judges
+      have bias, rubrics miss edge cases. Combining all three gives a more robust
+      composite score:
+    </p>
+    <div class="method-grid">
+      <div class="method-card llm">
+        <div class="method-weight">40%</div>
+        <div class="method-name">LLM-as-Judge</div>
+        <div class="method-desc">Local Qwen2.5-0.5B scores each response 0–10 with reasoning. Falls back to heuristic (ROUGE-based) in CI where no model is loaded — no blocked pipelines.</div>
+      </div>
+      <div class="method-card rubric">
+        <div class="method-weight">35%</div>
+        <div class="method-name">Custom Rubric</div>
+        <div class="method-desc">Domain-specific heuristic scoring across dimensions like accuracy, actionability, completeness. Three rubric variants: general, SRE, and RAG. No model required.</div>
+      </div>
+      <div class="method-card rouge">
+        <div class="method-weight">25%</div>
+        <div class="method-name">ROUGE</div>
+        <div class="method-desc">Text overlap baseline using ROUGE-1, ROUGE-2, and ROUGE-L. Fast, deterministic, always consistent. Acts as a sanity check on the other two methods.</div>
+      </div>
+    </div>
+    <p class="prose">
+      Composite score = <strong>ROUGE (25%) + LLM Judge (40%) + Rubric (35%)</strong>.
+      A response passes if the composite reaches <strong>6.0 / 10</strong>.
+    </p>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Custom SRE Rubric</div>
+    <p class="prose" style="margin-bottom:20px">
+      The rubric has three domain-specific variants. The <strong>SRE category</strong>
+      explicitly checks for kubectl commands, escalation paths, and actionable steps —
+      things generic eval frameworks miss entirely:
+    </p>
+    <div class="rubric-grid">
+      <div class="rubric-cat">
+        <div class="rubric-cat-title">General</div>
+        <div class="rubric-dim"><span class="rubric-dim-name">accuracy</span><span class="rubric-dim-weight">35%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">completeness</span><span class="rubric-dim-weight">25%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">clarity</span><span class="rubric-dim-weight">20%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">conciseness</span><span class="rubric-dim-weight">20%</span></div>
+      </div>
+      <div class="rubric-cat">
+        <div class="rubric-cat-title">SRE Domain</div>
+        <div class="rubric-dim"><span class="rubric-dim-name">accuracy</span><span class="rubric-dim-weight">30%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">actionability</span><span class="rubric-dim-weight">30%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">completeness</span><span class="rubric-dim-weight">20%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">escalation</span><span class="rubric-dim-weight">20%</span></div>
+      </div>
+      <div class="rubric-cat">
+        <div class="rubric-cat-title">RAG</div>
+        <div class="rubric-dim"><span class="rubric-dim-name">faithfulness</span><span class="rubric-dim-weight">35%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">relevance</span><span class="rubric-dim-weight">30%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">completeness</span><span class="rubric-dim-weight">20%</span></div>
+        <div class="rubric-dim"><span class="rubric-dim-name">hallucination</span><span class="rubric-dim-weight">15%</span></div>
+      </div>
+    </div>
+    <p class="prose">
+      The SRE rubric's <strong>actionability</strong> dimension checks for kubectl, grep,
+      systemctl, docker, helm, and prometheus commands. The <strong>escalation</strong>
+      dimension checks for words like "escalate", "page", "on-call", "severity".
+      Generic eval frameworks score these the same as any other text — the SRE rubric
+      rewards domain-appropriate responses.
+    </p>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Evaluation Pipeline</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>Load test cases</strong> — reads test_cases.jsonl. Each case has: id, question, reference_answer, generated_answer, category (general/SRE/RAG).</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>ROUGE scoring</strong> — rouge_scorer computes ROUGE-1/2/L F1 scores against the reference answer. Fast, no model needed.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>LLM judge</strong> — Qwen2.5-0.5B prompted to score 0–10 with a one-line reason. Falls back to ROUGE-based heuristic if no model loaded (CI mode).</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>Rubric scoring</strong> — heuristic scoring across 4 domain dimensions based on word overlap, length ratio, command detection, and escalation keywords.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>Composite score</strong> — weighted average: ROUGE 25% + LLM judge 40% + rubric 35%. Pass if ≥ 6.0/10.</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>Save to SQLite</strong> — every run saved to eval_history.db with all per-test scores and run summary. Used by P10 Observability Dashboard.</div></li>
+      <li><div class="step-num">7</div><div class="step-content"><strong>Regression check</strong> — compares current avg_composite against previous run. If drop &gt; 5%, CI gate fails and deployment is blocked.</div></li>
+      <li><div class="step-num">8</div><div class="step-content"><strong>Markdown report</strong> — generates eval_report.md with per-test table, regression status, and score weights.</div></li>
+    </ul>
+  </div>
+</div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">SRE Additions</div>
@@ -362,8 +331,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Key Design Decisions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Key Design Decisions</div>
@@ -383,8 +350,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Stack -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Tech Stack</div>
@@ -401,8 +366,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Try it -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
@@ -428,18 +391,22 @@ python -m src.run_eval --regression-threshold 10.0
 pytest tests/ -v</pre></div>
   </div>
 </div>
-
 <div class="wrap">
-  <footer>
-    <div class="footer-links">
-      <a href="../index.html">← Portfolio</a>
-      <a href="https://github.com/amarshiv86/p09-llm-eval" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/spaces/amarshiv86/p09-llm-eval" target="_blank">Live Demo</a>
-      <a href="https://huggingface.co/datasets/amarshiv86/p09-llm-eval-dataset" target="_blank">HF Dataset</a>
+  <div class="proj-header">
+    <div class="proj-eyebrow">P09 · Evals <span class="proj-badge">Live ✓</span></div>
+    <h1 class="proj-title">LLM Eval Framework</h1>
+    <p class="proj-subtitle">
+      Generic evaluation framework for LLM responses using three complementary
+      methods — ROUGE, LLM-as-judge, and a custom domain rubric. SQLite tracks
+      every run for regression detection. GitHub Actions CI gate blocks deploy
+      if the composite score drops more than 5%.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Methods</div><div class="meta-value green">ROUGE · LLM Judge · Rubric</div></div>
+      <div class="meta-item"><div class="meta-label">Pass threshold</div><div class="meta-value">6.0 / 10</div></div>
+      <div class="meta-item"><div class="meta-label">CI gate</div><div class="meta-value green">Blocks on &gt;5% drop</div></div>
+      <div class="meta-item"><div class="meta-label">Score history</div><div class="meta-value">SQLite</div></div>
+      <div class="meta-item"><div class="meta-label">Categories</div><div class="meta-value">general · SRE · RAG</div></div>
     </div>
-    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
-  </footer>
+  </div>
 </div>
-
-</body>
-</html>

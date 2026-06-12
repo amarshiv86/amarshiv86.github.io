@@ -101,27 +101,6 @@ footer{padding:32px 0;text-align:center}
 </nav>
 
 <div class="wrap">
-  <div class="proj-header">
-    <div class="proj-eyebrow">P05 · RAG · Scheduled Pipeline <span class="proj-badge">Paused</span></div>
-    <h1 class="proj-title">Financial News RAG Pipeline</h1>
-    <p class="proj-subtitle">
-      Automated daily ingestion from 5 financial RSS feeds into ChromaDB,
-      served via FastAPI with ticker filtering, full-text search, and
-      a clean news browsing UI. GitHub Actions cron keeps the index fresh every day.
-    </p>
-    <div class="proj-meta">
-      <div class="meta-item"><div class="meta-label">Data sources</div><div class="meta-value amber">5 RSS feeds</div></div>
-      <div class="meta-item"><div class="meta-label">Vector store</div><div class="meta-value green">ChromaDB</div></div>
-      <div class="meta-item"><div class="meta-label">Schedule</div><div class="meta-value">Daily 6am UTC</div></div>
-      <div class="meta-item"><div class="meta-label">Tickers tracked</div><div class="meta-value">13 (AAPL, TSLA, NVDA...)</div></div>
-      <div class="meta-item"><div class="meta-label">Deduplication</div><div class="meta-value">MD5 hash of URL</div></div>
-      <div class="meta-item"><div class="meta-label">Serving</div><div class="meta-value">FastAPI + Docker</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- What makes P05 different -->
-<div class="wrap">
   <div class="section">
     <div class="section-title">What makes P05 different from P04</div>
     <p class="prose">
@@ -140,43 +119,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Data Sources -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Data Sources</div>
-    <p class="prose" style="margin-bottom:20px">5 RSS feeds ingested daily — up to 20 articles per feed per run:</p>
-    <div class="feeds-grid">
-      <div class="feed-card">
-        <div class="feed-name">Yahoo Finance Markets</div>
-        <div class="feed-detail">finance.yahoo.com/news/rssindex</div>
-      </div>
-      <div class="feed-card">
-        <div class="feed-name">Yahoo Finance Tech</div>
-        <div class="feed-detail">AAPL, MSFT, GOOGL, TSLA, AMZN</div>
-      </div>
-      <div class="feed-card">
-        <div class="feed-name">Reuters Business</div>
-        <div class="feed-detail">feeds.reuters.com/businessNews</div>
-      </div>
-      <div class="feed-card">
-        <div class="feed-name">MarketWatch</div>
-        <div class="feed-detail">Top stories feed</div>
-      </div>
-      <div class="feed-card">
-        <div class="feed-name">Seeking Alpha</div>
-        <div class="feed-detail">seekingalpha.com/feed.xml</div>
-      </div>
-    </div>
-    <p class="prose">
-      Tickers tracked: <strong>AAPL, TSLA, MSFT, GOOGL, AMZN, NVDA, META, NFLX, AMD, INTC, JPM, SPY, QQQ</strong>.
-      Each article is tagged with which tickers appear in the title or summary,
-      enabling filtered queries like "news about NVDA only".
-    </p>
-  </div>
-</div>
-
-<!-- Architecture -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Architecture</div>
@@ -265,8 +207,39 @@ footer{padding:32px 0;text-align:center}
     </svg>
   </div>
 </div>
-
-<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Data Sources</div>
+    <p class="prose" style="margin-bottom:20px">5 RSS feeds ingested daily — up to 20 articles per feed per run:</p>
+    <div class="feeds-grid">
+      <div class="feed-card">
+        <div class="feed-name">Yahoo Finance Markets</div>
+        <div class="feed-detail">finance.yahoo.com/news/rssindex</div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-name">Yahoo Finance Tech</div>
+        <div class="feed-detail">AAPL, MSFT, GOOGL, TSLA, AMZN</div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-name">Reuters Business</div>
+        <div class="feed-detail">feeds.reuters.com/businessNews</div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-name">MarketWatch</div>
+        <div class="feed-detail">Top stories feed</div>
+      </div>
+      <div class="feed-card">
+        <div class="feed-name">Seeking Alpha</div>
+        <div class="feed-detail">seekingalpha.com/feed.xml</div>
+      </div>
+    </div>
+    <p class="prose">
+      Tickers tracked: <strong>AAPL, TSLA, MSFT, GOOGL, AMZN, NVDA, META, NFLX, AMD, INTC, JPM, SPY, QQQ</strong>.
+      Each article is tagged with which tickers appear in the title or summary,
+      enabling filtered queries like "news about NVDA only".
+    </p>
+  </div>
+</div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">How it works</div>
@@ -281,8 +254,6 @@ footer{padding:32px 0;text-align:center}
     </ul>
   </div>
 </div>
-
-<!-- API Endpoints -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">API Endpoints</div>
@@ -315,8 +286,6 @@ footer{padding:32px 0;text-align:center}
     </table>
   </div>
 </div>
-
-<!-- SRE Additions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">SRE Additions</div>
@@ -332,8 +301,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Key Design Decisions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Key Design Decisions</div>
@@ -357,8 +324,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Stack -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Tech Stack</div>
@@ -376,8 +341,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Try it -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
@@ -405,18 +368,22 @@ curl <span class="str">"http://localhost:7860/news?ticker=AAPL&limit=5"</span>
 curl <span class="str">"http://localhost:7860/health"</span></pre></div>
   </div>
 </div>
-
 <div class="wrap">
-  <footer>
-    <div class="footer-links">
-      <a href="../index.html">← Portfolio</a>
-      <a href="https://github.com/amarshiv86/p05-financial-news-rag" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/datasets/amarshiv86/financial-news-db" target="_blank">HF Dataset</a>
-      <a href="https://huggingface.co/spaces/amarshiv86/p05-financial-news-rag" target="_blank">HF Space</a>
+  <div class="proj-header">
+    <div class="proj-eyebrow">P05 · RAG · Scheduled Pipeline <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">Financial News RAG Pipeline</h1>
+    <p class="proj-subtitle">
+      Automated daily ingestion from 5 financial RSS feeds into ChromaDB,
+      served via FastAPI with ticker filtering, full-text search, and
+      a clean news browsing UI. GitHub Actions cron keeps the index fresh every day.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Data sources</div><div class="meta-value amber">5 RSS feeds</div></div>
+      <div class="meta-item"><div class="meta-label">Vector store</div><div class="meta-value green">ChromaDB</div></div>
+      <div class="meta-item"><div class="meta-label">Schedule</div><div class="meta-value">Daily 6am UTC</div></div>
+      <div class="meta-item"><div class="meta-label">Tickers tracked</div><div class="meta-value">13 (AAPL, TSLA, NVDA...)</div></div>
+      <div class="meta-item"><div class="meta-label">Deduplication</div><div class="meta-value">MD5 hash of URL</div></div>
+      <div class="meta-item"><div class="meta-label">Serving</div><div class="meta-value">FastAPI + Docker</div></div>
     </div>
-    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
-  </footer>
+  </div>
 </div>
-
-</body>
-</html>

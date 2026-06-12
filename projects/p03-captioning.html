@@ -112,26 +112,6 @@ footer{padding:32px 0;text-align:center}
 </nav>
 
 <div class="wrap">
-  <div class="proj-header">
-    <div class="proj-eyebrow">P03 · Multimodal <span class="proj-badge">Paused</span></div>
-    <h1 class="proj-title">Image Captioning</h1>
-    <p class="proj-subtitle">
-      Multimodal pipeline using a Vision Transformer (ViT) encoder and GPT-2 decoder
-      to generate natural language descriptions from images. Upload any image and
-      get AI-generated captions with adjustable beam search and caption count controls.
-    </p>
-    <div class="proj-meta">
-      <div class="meta-item"><div class="meta-label">Encoder</div><div class="meta-value blue">ViT (Vision Transformer)</div></div>
-      <div class="meta-item"><div class="meta-label">Decoder</div><div class="meta-value purple">GPT-2</div></div>
-      <div class="meta-item"><div class="meta-label">Architecture</div><div class="meta-value">VisionEncoderDecoder</div></div>
-      <div class="meta-item"><div class="meta-label">Training data</div><div class="meta-value">COCO · 118k images</div></div>
-      <div class="meta-item"><div class="meta-label">Beam search</div><div class="meta-value">1–8 configurable</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- Model components -->
-<div class="wrap">
   <div class="section">
     <div class="section-title">Model Architecture</div>
     <p class="prose" style="margin-bottom:20px">
@@ -169,22 +149,6 @@ footer{padding:32px 0;text-align:center}
     </p>
   </div>
 </div>
-
-<!-- How it works -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">How it works</div>
-    <ul class="steps">
-      <li><div class="step-num">1</div><div class="step-content"><strong>Image upload</strong> — user uploads any image via the Gradio UI. The image is loaded with PIL and converted to RGB.</div></li>
-      <li><div class="step-num">2</div><div class="step-content"><strong>ViT encoding</strong> — the image is split into 16×16 patches, each converted to a 768-dimensional embedding. The ViT processes all patches with self-attention, producing a 196-token sequence of patch representations.</div></li>
-      <li><div class="step-num">3</div><div class="step-content"><strong>Cross-attention</strong> — the GPT-2 decoder attends to the ViT patch embeddings to condition its text generation on the image content. Each generated token can attend to every image patch.</div></li>
-      <li><div class="step-num">4</div><div class="step-content"><strong>Beam search</strong> — instead of greedily picking the most likely next token, beam search maintains N candidate sequences simultaneously. Higher beam width = more exploration = better captions at the cost of compute.</div></li>
-      <li><div class="step-num">5</div><div class="step-content"><strong>Caption output</strong> — the decoder generates up to 16 tokens, producing a natural language sentence describing the image. Multiple captions can be generated to see model uncertainty.</div></li>
-    </ul>
-  </div>
-</div>
-
-<!-- Architecture diagram -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Architecture</div>
@@ -239,8 +203,18 @@ footer{padding:32px 0;text-align:center}
     </svg>
   </div>
 </div>
-
-<!-- Caption examples -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>Image upload</strong> — user uploads any image via the Gradio UI. The image is loaded with PIL and converted to RGB.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>ViT encoding</strong> — the image is split into 16×16 patches, each converted to a 768-dimensional embedding. The ViT processes all patches with self-attention, producing a 196-token sequence of patch representations.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>Cross-attention</strong> — the GPT-2 decoder attends to the ViT patch embeddings to condition its text generation on the image content. Each generated token can attend to every image patch.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>Beam search</strong> — instead of greedily picking the most likely next token, beam search maintains N candidate sequences simultaneously. Higher beam width = more exploration = better captions at the cost of compute.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>Caption output</strong> — the decoder generates up to 16 tokens, producing a natural language sentence describing the image. Multiple captions can be generated to see model uncertainty.</div></li>
+    </ul>
+  </div>
+</div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">Example Captions</div>
@@ -278,8 +252,6 @@ footer{padding:32px 0;text-align:center}
     </p>
   </div>
 </div>
-
-<!-- Features -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Features</div>
@@ -293,8 +265,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Key Design Decisions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Key Design Decisions</div>
@@ -314,8 +284,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Stack -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Tech Stack</div>
@@ -332,8 +300,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Try it -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
@@ -358,18 +324,21 @@ python app.py
 <span class="cmt"># 4. Click Generate — compare the 3 candidate captions</span></pre></div>
   </div>
 </div>
-
 <div class="wrap">
-  <footer>
-    <div class="footer-links">
-      <a href="../index.html">← Portfolio</a>
-      <a href="https://github.com/amarshiv86/p03-image-captioning" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/nlpconnect/vit-gpt2-image-captioning" target="_blank">HF Model</a>
-      <a href="https://huggingface.co/spaces/amarshiv86/p03-image-captioning" target="_blank">HF Space</a>
+  <div class="proj-header">
+    <div class="proj-eyebrow">P03 · Multimodal <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">Image Captioning</h1>
+    <p class="proj-subtitle">
+      Multimodal pipeline using a Vision Transformer (ViT) encoder and GPT-2 decoder
+      to generate natural language descriptions from images. Upload any image and
+      get AI-generated captions with adjustable beam search and caption count controls.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Encoder</div><div class="meta-value blue">ViT (Vision Transformer)</div></div>
+      <div class="meta-item"><div class="meta-label">Decoder</div><div class="meta-value purple">GPT-2</div></div>
+      <div class="meta-item"><div class="meta-label">Architecture</div><div class="meta-value">VisionEncoderDecoder</div></div>
+      <div class="meta-item"><div class="meta-label">Training data</div><div class="meta-value">COCO · 118k images</div></div>
+      <div class="meta-item"><div class="meta-label">Beam search</div><div class="meta-value">1–8 configurable</div></div>
     </div>
-    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
-  </footer>
+  </div>
 </div>
-
-</body>
-</html>

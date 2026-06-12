@@ -126,186 +126,6 @@ footer{padding:32px 0;text-align:center}
 </nav>
 
 <div class="wrap">
-  <div class="proj-header">
-    <div class="proj-eyebrow">P07 · Fine-tuning <span class="proj-badge">Paused</span></div>
-    <h1 class="proj-title">LoRA Fine-tuned SRE Assistant</h1>
-    <p class="proj-subtitle">
-      QLoRA fine-tuning of Phi-3-mini-4k-instruct on 15 hand-crafted SRE runbook
-      Q&A pairs using PEFT. ROUGE-1 improved 65.8%, ROUGE-2 improved 153.6%
-      over the base model. Adapter published to HuggingFace Hub.
-    </p>
-    <div class="proj-meta">
-      <div class="meta-item"><div class="meta-label">Base Model</div><div class="meta-value purple">Phi-3-mini-4k-instruct</div></div>
-      <div class="meta-item"><div class="meta-label">Method</div><div class="meta-value">QLoRA + PEFT</div></div>
-      <div class="meta-item"><div class="meta-label">LoRA rank</div><div class="meta-value">r=16</div></div>
-      <div class="meta-item"><div class="meta-label">Training examples</div><div class="meta-value">15 SRE Q&A pairs</div></div>
-      <div class="meta-item"><div class="meta-label">ROUGE-1 improvement</div><div class="meta-value green">+65.8%</div></div>
-      <div class="meta-item"><div class="meta-label">Epochs</div><div class="meta-value">3</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- Results -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Before vs After Fine-tuning</div>
-    <table class="rouge-table">
-      <thead>
-        <tr>
-          <th>Metric</th>
-          <th>Base Phi-3-mini</th>
-          <th>Fine-tuned</th>
-          <th>Improvement</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>ROUGE-1</td>
-          <td class="base">0.2841</td>
-          <td class="tuned">0.4712</td>
-          <td class="improvement good">+65.8%</td>
-        </tr>
-        <tr>
-          <td>ROUGE-2</td>
-          <td class="base">0.0923</td>
-          <td class="tuned">0.2341</td>
-          <td class="improvement good">+153.6%</td>
-        </tr>
-        <tr>
-          <td>ROUGE-L</td>
-          <td class="base">0.1876</td>
-          <td class="tuned">0.3854</td>
-          <td class="improvement good">+105.4%</td>
-        </tr>
-      </tbody>
-    </table>
-    <p class="prose">
-      ROUGE measures overlap between generated and reference answers.
-      The dramatic improvement in ROUGE-2 (+153.6%) means the fine-tuned model
-      produces <strong>bigrams (two-word phrases) that match the reference answers</strong>
-      — technical terms like "kubectl logs", "burn rate", "error budget" appear
-      in the correct context. The base model produces generic responses that
-      miss domain-specific terminology entirely.
-    </p>
-  </div>
-</div>
-
-<!-- Answer comparison -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Answer Quality — Real Examples</div>
-    <p class="prose" style="margin-bottom:24px">
-      The difference in answer quality is visible in the actual outputs
-      from real eval examples:
-    </p>
-    <div class="qa-compare">
-      <div class="qa-item">
-        <div class="qa-question">Q: What steps should I take when a pod is in CrashLoopBackOff?</div>
-        <div class="qa-answers">
-          <div class="qa-answer">
-            <div class="qa-answer-label base">❌ Base Phi-3-mini</div>
-            <div class="qa-answer-text">A CrashLoopBackOff error means the container is crashing repeatedly. You should check what is wrong with your application.</div>
-          </div>
-          <div class="qa-answer tuned">
-            <div class="qa-answer-label tuned">✅ Fine-tuned</div>
-            <div class="qa-answer-text">1. Check pod logs: kubectl logs &lt;pod&gt; --previous to see the crash reason. 2. Describe the pod: kubectl describe pod &lt;pod&gt; to review events and exit codes. 3. Exit code 137 means OOMKilled — increase memory limits. 4. Verify the container image is pullable. 5. Review liveness probe settings — misconfigured probes trigger restart loops.</div>
-          </div>
-        </div>
-      </div>
-      <div class="qa-item">
-        <div class="qa-question">Q: How do I calculate error budget remaining for a 99.9% SLO?</div>
-        <div class="qa-answers">
-          <div class="qa-answer">
-            <div class="qa-answer-label base">❌ Base Phi-3-mini</div>
-            <div class="qa-answer-text">Error budget is the amount of downtime you are allowed.</div>
-          </div>
-          <div class="qa-answer tuned">
-            <div class="qa-answer-label tuned">✅ Fine-tuned</div>
-            <div class="qa-answer-text">Error budget = 1 - 0.999 = 0.1% allowed failure. For a 30-day window: 0.001 x 30 x 24 x 60 = 43.2 minutes of allowed downtime. Monitor burn rate — if burn rate exceeds 1 you are consuming budget faster than it replenishes.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- How it works -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">How QLoRA Fine-tuning Works</div>
-    <ul class="steps">
-      <li><div class="step-num">1</div><div class="step-content"><strong>4-bit quantization</strong> — Phi-3-mini loaded in NF4 (normalized float 4-bit) using BitsAndBytes. Reduces the 3.8B parameter model from ~7GB to ~2GB VRAM, making it trainable on a free Colab T4 GPU.</div></li>
-      <li><div class="step-num">2</div><div class="step-content"><strong>LoRA adapter injection</strong> — PEFT adds small trainable matrices (rank 16) to the q_proj and v_proj attention layers. Only ~1% of parameters are trained — the base model weights stay frozen.</div></li>
-      <li><div class="step-num">3</div><div class="step-content"><strong>Phi-3 instruction format</strong> — training examples formatted as &lt;|user|&gt; question &lt;|end|&gt; &lt;|assistant|&gt; answer &lt;|end|&gt; to match the model's pre-training format. Mismatched format reduces fine-tuning effectiveness.</div></li>
-      <li><div class="step-num">4</div><div class="step-content"><strong>Training</strong> — 3 epochs, batch size 2, gradient accumulation 4 (effective batch 8), learning rate 2e-4 with cosine scheduler and 3% warmup. BF16 mixed precision on supported hardware.</div></li>
-      <li><div class="step-num">5</div><div class="step-content"><strong>ROUGE evaluation</strong> — before/after comparison on held-out questions. ROUGE-1/2/L scores computed against reference answers to quantify improvement.</div></li>
-      <li><div class="step-num">6</div><div class="step-content"><strong>Adapter push to Hub</strong> — only the LoRA adapter weights (~50MB) pushed to HF Hub, not the full 3.8B model. At inference time, adapter is merged with the base model.</div></li>
-    </ul>
-  </div>
-</div>
-
-<!-- LoRA config -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Training Configuration</div>
-    <div class="config-grid">
-      <div class="config-box">
-        <div class="config-box-title">LoRA Config</div>
-        <div class="config-row"><span class="config-key">rank (r)</span><span class="config-val">16</span></div>
-        <div class="config-row"><span class="config-key">lora_alpha</span><span class="config-val">32</span></div>
-        <div class="config-row"><span class="config-key">target_modules</span><span class="config-val">q_proj, v_proj</span></div>
-        <div class="config-row"><span class="config-key">lora_dropout</span><span class="config-val">0.05</span></div>
-        <div class="config-row"><span class="config-key">bias</span><span class="config-val">none</span></div>
-      </div>
-      <div class="config-box">
-        <div class="config-box-title">Training Args</div>
-        <div class="config-row"><span class="config-key">epochs</span><span class="config-val">3</span></div>
-        <div class="config-row"><span class="config-key">batch_size</span><span class="config-val">2 × 4 accum = 8</span></div>
-        <div class="config-row"><span class="config-key">learning_rate</span><span class="config-val">2e-4</span></div>
-        <div class="config-row"><span class="config-key">lr_scheduler</span><span class="config-val">cosine</span></div>
-        <div class="config-row"><span class="config-key">quantization</span><span class="config-val">NF4 4-bit</span></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Training data -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Training Data — 15 SRE Q&A Pairs</div>
-    <p class="prose" style="margin-bottom:16px">
-      All 15 training examples were hand-crafted covering real SRE topics.
-      Small dataset by design — demonstrates that domain-specific fine-tuning
-      can work with very few examples when the data quality is high:
-    </p>
-    <div class="topics-grid">
-      <span class="topic">CrashLoopBackOff</span>
-      <span class="topic">Error budget calculation</span>
-      <span class="topic">On-call handoff</span>
-      <span class="topic">DB connection pool exhaustion</span>
-      <span class="topic">Node NotReady</span>
-      <span class="topic">Post-mortem writing</span>
-      <span class="topic">Burn rate alerting</span>
-      <span class="topic">High API latency</span>
-      <span class="topic">SLI vs SLO vs SLA</span>
-      <span class="topic">Kubernetes rollback</span>
-      <span class="topic">Runbook structure</span>
-      <span class="topic">SLO alerting setup</span>
-      <span class="topic">Chaos engineering</span>
-      <span class="topic">Disk full incident</span>
-      <span class="topic">Safe production deploy</span>
-    </div>
-    <p class="prose">
-      Each answer includes <strong>specific kubectl commands, exact calculations,
-      and numbered action steps</strong> — the kind of precise operational knowledge
-      that generic LLMs summarize vaguely. The fine-tuned model learns to
-      produce answers in this structured, actionable format.
-    </p>
-  </div>
-</div>
-
-<!-- Architecture -->
-<div class="wrap">
   <div class="section">
     <div class="section-title">Architecture</div>
     <svg width="100%" viewBox="0 0 700 480" role="img" style="margin:24px 0;border-radius:12px">
@@ -382,8 +202,155 @@ footer{padding:32px 0;text-align:center}
     </svg>
   </div>
 </div>
-
-<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How QLoRA Fine-tuning Works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>4-bit quantization</strong> — Phi-3-mini loaded in NF4 (normalized float 4-bit) using BitsAndBytes. Reduces the 3.8B parameter model from ~7GB to ~2GB VRAM, making it trainable on a free Colab T4 GPU.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>LoRA adapter injection</strong> — PEFT adds small trainable matrices (rank 16) to the q_proj and v_proj attention layers. Only ~1% of parameters are trained — the base model weights stay frozen.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>Phi-3 instruction format</strong> — training examples formatted as &lt;|user|&gt; question &lt;|end|&gt; &lt;|assistant|&gt; answer &lt;|end|&gt; to match the model's pre-training format. Mismatched format reduces fine-tuning effectiveness.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>Training</strong> — 3 epochs, batch size 2, gradient accumulation 4 (effective batch 8), learning rate 2e-4 with cosine scheduler and 3% warmup. BF16 mixed precision on supported hardware.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>ROUGE evaluation</strong> — before/after comparison on held-out questions. ROUGE-1/2/L scores computed against reference answers to quantify improvement.</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>Adapter push to Hub</strong> — only the LoRA adapter weights (~50MB) pushed to HF Hub, not the full 3.8B model. At inference time, adapter is merged with the base model.</div></li>
+    </ul>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Before vs After Fine-tuning</div>
+    <table class="rouge-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Base Phi-3-mini</th>
+          <th>Fine-tuned</th>
+          <th>Improvement</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ROUGE-1</td>
+          <td class="base">0.2841</td>
+          <td class="tuned">0.4712</td>
+          <td class="improvement good">+65.8%</td>
+        </tr>
+        <tr>
+          <td>ROUGE-2</td>
+          <td class="base">0.0923</td>
+          <td class="tuned">0.2341</td>
+          <td class="improvement good">+153.6%</td>
+        </tr>
+        <tr>
+          <td>ROUGE-L</td>
+          <td class="base">0.1876</td>
+          <td class="tuned">0.3854</td>
+          <td class="improvement good">+105.4%</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="prose">
+      ROUGE measures overlap between generated and reference answers.
+      The dramatic improvement in ROUGE-2 (+153.6%) means the fine-tuned model
+      produces <strong>bigrams (two-word phrases) that match the reference answers</strong>
+      — technical terms like "kubectl logs", "burn rate", "error budget" appear
+      in the correct context. The base model produces generic responses that
+      miss domain-specific terminology entirely.
+    </p>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Answer Quality — Real Examples</div>
+    <p class="prose" style="margin-bottom:24px">
+      The difference in answer quality is visible in the actual outputs
+      from real eval examples:
+    </p>
+    <div class="qa-compare">
+      <div class="qa-item">
+        <div class="qa-question">Q: What steps should I take when a pod is in CrashLoopBackOff?</div>
+        <div class="qa-answers">
+          <div class="qa-answer">
+            <div class="qa-answer-label base">❌ Base Phi-3-mini</div>
+            <div class="qa-answer-text">A CrashLoopBackOff error means the container is crashing repeatedly. You should check what is wrong with your application.</div>
+          </div>
+          <div class="qa-answer tuned">
+            <div class="qa-answer-label tuned">✅ Fine-tuned</div>
+            <div class="qa-answer-text">1. Check pod logs: kubectl logs &lt;pod&gt; --previous to see the crash reason. 2. Describe the pod: kubectl describe pod &lt;pod&gt; to review events and exit codes. 3. Exit code 137 means OOMKilled — increase memory limits. 4. Verify the container image is pullable. 5. Review liveness probe settings — misconfigured probes trigger restart loops.</div>
+          </div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-question">Q: How do I calculate error budget remaining for a 99.9% SLO?</div>
+        <div class="qa-answers">
+          <div class="qa-answer">
+            <div class="qa-answer-label base">❌ Base Phi-3-mini</div>
+            <div class="qa-answer-text">Error budget is the amount of downtime you are allowed.</div>
+          </div>
+          <div class="qa-answer tuned">
+            <div class="qa-answer-label tuned">✅ Fine-tuned</div>
+            <div class="qa-answer-text">Error budget = 1 - 0.999 = 0.1% allowed failure. For a 30-day window: 0.001 x 30 x 24 x 60 = 43.2 minutes of allowed downtime. Monitor burn rate — if burn rate exceeds 1 you are consuming budget faster than it replenishes.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Training Configuration</div>
+    <div class="config-grid">
+      <div class="config-box">
+        <div class="config-box-title">LoRA Config</div>
+        <div class="config-row"><span class="config-key">rank (r)</span><span class="config-val">16</span></div>
+        <div class="config-row"><span class="config-key">lora_alpha</span><span class="config-val">32</span></div>
+        <div class="config-row"><span class="config-key">target_modules</span><span class="config-val">q_proj, v_proj</span></div>
+        <div class="config-row"><span class="config-key">lora_dropout</span><span class="config-val">0.05</span></div>
+        <div class="config-row"><span class="config-key">bias</span><span class="config-val">none</span></div>
+      </div>
+      <div class="config-box">
+        <div class="config-box-title">Training Args</div>
+        <div class="config-row"><span class="config-key">epochs</span><span class="config-val">3</span></div>
+        <div class="config-row"><span class="config-key">batch_size</span><span class="config-val">2 × 4 accum = 8</span></div>
+        <div class="config-row"><span class="config-key">learning_rate</span><span class="config-val">2e-4</span></div>
+        <div class="config-row"><span class="config-key">lr_scheduler</span><span class="config-val">cosine</span></div>
+        <div class="config-row"><span class="config-key">quantization</span><span class="config-val">NF4 4-bit</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Training Data — 15 SRE Q&A Pairs</div>
+    <p class="prose" style="margin-bottom:16px">
+      All 15 training examples were hand-crafted covering real SRE topics.
+      Small dataset by design — demonstrates that domain-specific fine-tuning
+      can work with very few examples when the data quality is high:
+    </p>
+    <div class="topics-grid">
+      <span class="topic">CrashLoopBackOff</span>
+      <span class="topic">Error budget calculation</span>
+      <span class="topic">On-call handoff</span>
+      <span class="topic">DB connection pool exhaustion</span>
+      <span class="topic">Node NotReady</span>
+      <span class="topic">Post-mortem writing</span>
+      <span class="topic">Burn rate alerting</span>
+      <span class="topic">High API latency</span>
+      <span class="topic">SLI vs SLO vs SLA</span>
+      <span class="topic">Kubernetes rollback</span>
+      <span class="topic">Runbook structure</span>
+      <span class="topic">SLO alerting setup</span>
+      <span class="topic">Chaos engineering</span>
+      <span class="topic">Disk full incident</span>
+      <span class="topic">Safe production deploy</span>
+    </div>
+    <p class="prose">
+      Each answer includes <strong>specific kubectl commands, exact calculations,
+      and numbered action steps</strong> — the kind of precise operational knowledge
+      that generic LLMs summarize vaguely. The fine-tuned model learns to
+      produce answers in this structured, actionable format.
+    </p>
+  </div>
+</div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">SRE Additions</div>
@@ -397,8 +364,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Key Design Decisions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Key Design Decisions</div>
@@ -422,8 +387,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Stack -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Tech Stack</div>
@@ -442,8 +405,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Try it -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
@@ -476,19 +437,22 @@ base = AutoModelForCausalLM.from_pretrained(<span class="str">"microsoft/Phi-3-m
 model = PeftModel.from_pretrained(base, <span class="str">"amarshiv86/p07-sre-lora-phi3"</span>)</pre></div>
   </div>
 </div>
-
 <div class="wrap">
-  <footer>
-    <div class="footer-links">
-      <a href="../index.html">← Portfolio</a>
-      <a href="https://github.com/amarshiv86/p07-lora-finetune" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/amarshiv86/p07-sre-lora-phi3" target="_blank">HF Model</a>
-      <a href="https://huggingface.co/spaces/amarshiv86/p07-sre-lora-demo" target="_blank">HF Space</a>
-      <a href="https://huggingface.co/datasets/amarshiv86/p07-sre-lora-dataset" target="_blank">HF Dataset</a>
+  <div class="proj-header">
+    <div class="proj-eyebrow">P07 · Fine-tuning <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">LoRA Fine-tuned SRE Assistant</h1>
+    <p class="proj-subtitle">
+      QLoRA fine-tuning of Phi-3-mini-4k-instruct on 15 hand-crafted SRE runbook
+      Q&A pairs using PEFT. ROUGE-1 improved 65.8%, ROUGE-2 improved 153.6%
+      over the base model. Adapter published to HuggingFace Hub.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Base Model</div><div class="meta-value purple">Phi-3-mini-4k-instruct</div></div>
+      <div class="meta-item"><div class="meta-label">Method</div><div class="meta-value">QLoRA + PEFT</div></div>
+      <div class="meta-item"><div class="meta-label">LoRA rank</div><div class="meta-value">r=16</div></div>
+      <div class="meta-item"><div class="meta-label">Training examples</div><div class="meta-value">15 SRE Q&A pairs</div></div>
+      <div class="meta-item"><div class="meta-label">ROUGE-1 improvement</div><div class="meta-value green">+65.8%</div></div>
+      <div class="meta-item"><div class="meta-label">Epochs</div><div class="meta-value">3</div></div>
     </div>
-    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
-  </footer>
+  </div>
 </div>
-
-</body>
-</html>

@@ -123,204 +123,6 @@ footer{padding:32px 0;text-align:center}
 </nav>
 
 <div class="wrap">
-  <div class="proj-header">
-    <div class="proj-eyebrow">P10 · Observability <span class="proj-badge">Paused</span></div>
-    <h1 class="proj-title">LLM Observability Dashboard</h1>
-    <p class="proj-subtitle">
-      Unified observability dashboard for AI systems — eval scores from P09's
-      real SQLite database, SLO burn rates, latency p50/p95/p99, LLM cost
-      tracking by model, prompt version history, and anomaly-based alerting.
-      Everything an SRE needs to monitor an AI system in production.
-    </p>
-    <div class="proj-meta">
-      <div class="meta-item"><div class="meta-label">Panels</div><div class="meta-value amber">6 dashboard panels</div></div>
-      <div class="meta-item"><div class="meta-label">Real data</div><div class="meta-value green">P09 eval SQLite DB</div></div>
-      <div class="meta-item"><div class="meta-label">Alert types</div><div class="meta-value">SLO · latency · cost · eval</div></div>
-      <div class="meta-item"><div class="meta-label">Services</div><div class="meta-value">4 SLO + 3 latency</div></div>
-      <div class="meta-item"><div class="meta-label">UI</div><div class="meta-value">Gradio 5</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- What it monitors -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">6 Dashboard Panels</div>
-    <p class="prose" style="margin-bottom:20px">
-      Each panel maps to a real SRE concern for AI systems. Together they give
-      a complete picture of system health, cost, and quality:
-    </p>
-    <div class="panels-grid">
-      <div class="panel green">
-        <div class="panel-title">Eval Score Trend</div>
-        <div class="panel-desc">
-          <strong>Real data from P09 SQLite.</strong> Shows avg composite score and pass rate
-          over the last 15 runs. Regression visible as a drop in the trend line.
-        </div>
-      </div>
-      <div class="panel red">
-        <div class="panel-title">SLO Burn Rates</div>
-        <div class="panel-desc">
-          4 services monitored — api-gateway, payment-service, auth-service,
-          notification-service. <strong>CRITICAL/WARNING/ELEVATED/OK</strong>
-          status with burn rate and budget remaining %.
-        </div>
-      </div>
-      <div class="panel blue">
-        <div class="panel-title">Latency p50/p95/p99</div>
-        <div class="panel-desc">
-          3 AI services tracked — p06-code-review, p08-sre-agent, p09-eval.
-          <strong>p99 vs SLO threshold</strong> with trend direction
-          (stable / improving / degrading).
-        </div>
-      </div>
-      <div class="panel amber">
-        <div class="panel-title">LLM Cost Tracking</div>
-        <div class="panel-desc">
-          Daily cost breakdown by model — qwen2.5-0.5b, phi-3-mini, mistral-7b.
-          7-day trend with <strong>cost spike detection</strong> (alerts if today
-          is 50%+ above yesterday).
-        </div>
-      </div>
-      <div class="panel purple">
-        <div class="panel-title">Prompt Version History</div>
-        <div class="panel-desc">
-          6 prompt versions tracked across p06, p08, p09 — each with avg score,
-          request count, and description. Shows <strong>how prompt changes
-          affect quality over time</strong>.
-        </div>
-      </div>
-      <div class="panel red">
-        <div class="panel-title">Anomaly Alerts</div>
-        <div class="panel-desc">
-          4 alert detectors run on each refresh: SLO burn, latency breach,
-          cost spike, eval regression. Sorted <strong>critical → warning → info</strong>
-          with actionable recommendations.
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Data sources -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Data Sources</div>
-    <p class="prose" style="margin-bottom:20px">
-      P10 mixes one real data source with realistic mock data. The architecture
-      is designed so any mock can be swapped for a real Prometheus/PagerDuty
-      integration without changing the dashboard code:
-    </p>
-    <div class="source-grid">
-      <div class="source-card">
-        <div class="source-badge real">REAL</div>
-        <div class="source-content">
-          <div class="source-name">P09 eval_history.db</div>
-          <div class="source-detail">SQLite file from P09 copied to data/processed/. Dashboard reads actual eval runs, scores, and pass rates via direct SQL query.</div>
-        </div>
-      </div>
-      <div class="source-card">
-        <div class="source-badge mock">MOCK</div>
-        <div class="source-content">
-          <div class="source-name">SLO burn rates</div>
-          <div class="source-detail">Same mock Prometheus data pattern as P08. 4 services with realistic error rates — auth-service intentionally CRITICAL.</div>
-        </div>
-      </div>
-      <div class="source-card">
-        <div class="source-badge mock">MOCK</div>
-        <div class="source-content">
-          <div class="source-name">Latency p50/p95/p99</div>
-          <div class="source-detail">Realistic latency distributions for 3 AI services with ±15% random jitter on each refresh to simulate live data.</div>
-        </div>
-      </div>
-      <div class="source-card">
-        <div class="source-badge mock">MOCK</div>
-        <div class="source-content">
-          <div class="source-name">LLM cost tracker</div>
-          <div class="source-detail">Per-model cost calculation based on realistic token counts and pricing. 7-day history with daily breakdown.</div>
-        </div>
-      </div>
-      <div class="source-card">
-        <div class="source-badge mock">MOCK</div>
-        <div class="source-content">
-          <div class="source-name">Prompt version store</div>
-          <div class="source-detail">6 real prompt versions with actual descriptions matching P06, P08, P09 prompt evolution over the portfolio build.</div>
-        </div>
-      </div>
-      <div class="source-card">
-        <div class="source-badge mock">MOCK</div>
-        <div class="source-content">
-          <div class="source-name">Alert feed</div>
-          <div class="source-detail">4 realistic alerts — 1 critical (auth-service SLO), 2 warnings, 1 info (cert expiry). Mirrors real PagerDuty structure.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Anomaly detection -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">Anomaly Detection</div>
-    <p class="prose" style="margin-bottom:20px">
-      Four independent detectors run on every dashboard refresh.
-      Each returns structured <code>Alert</code> objects with service, message,
-      value, threshold, and an actionable recommendation:
-    </p>
-    <table class="alert-table">
-      <thead>
-        <tr><th>Detector</th><th>Trigger condition</th><th>Severity</th><th>Recommendation</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>SLO burn rate</td>
-          <td>burn_rate &gt; 14.4x</td>
-          <td class="sev-critical">CRITICAL</td>
-          <td style="font-size:12px">Page on-call immediately. Check recent deploys.</td>
-        </tr>
-        <tr>
-          <td>SLO burn rate</td>
-          <td>burn_rate &gt; 6x</td>
-          <td class="sev-warning">WARNING</td>
-          <td style="font-size:12px">Investigate error rate. Review slow query logs.</td>
-        </tr>
-        <tr>
-          <td>Latency</td>
-          <td>p99 &gt; 100% of SLO</td>
-          <td class="sev-critical">CRITICAL</td>
-          <td style="font-size:12px">Check for slow queries or resource saturation.</td>
-        </tr>
-        <tr>
-          <td>Latency</td>
-          <td>p99 &gt; 90% of SLO</td>
-          <td class="sev-warning">WARNING</td>
-          <td style="font-size:12px">Monitor closely — approaching SLO breach.</td>
-        </tr>
-        <tr>
-          <td>Cost spike</td>
-          <td>Today &gt; yesterday × 1.5</td>
-          <td class="sev-warning">WARNING</td>
-          <td style="font-size:12px">Check for unusual traffic or prompt loops.</td>
-        </tr>
-        <tr>
-          <td>Eval regression</td>
-          <td>Score drop &gt; 10%</td>
-          <td class="sev-critical">CRITICAL</td>
-          <td style="font-size:12px">Block deployment. Review prompt changes.</td>
-        </tr>
-        <tr>
-          <td>Eval regression</td>
-          <td>Score drop &gt; 5%</td>
-          <td class="sev-warning">WARNING</td>
-          <td style="font-size:12px">Investigate prompt changes. Run extended suite.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Architecture -->
-<div class="wrap">
   <div class="section">
     <div class="section-title">Architecture</div>
     <svg width="100%" viewBox="0 0 700 480" role="img" style="margin:24px 0;border-radius:12px">
@@ -410,8 +212,177 @@ footer{padding:32px 0;text-align:center}
     </svg>
   </div>
 </div>
-
-<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">6 Dashboard Panels</div>
+    <p class="prose" style="margin-bottom:20px">
+      Each panel maps to a real SRE concern for AI systems. Together they give
+      a complete picture of system health, cost, and quality:
+    </p>
+    <div class="panels-grid">
+      <div class="panel green">
+        <div class="panel-title">Eval Score Trend</div>
+        <div class="panel-desc">
+          <strong>Real data from P09 SQLite.</strong> Shows avg composite score and pass rate
+          over the last 15 runs. Regression visible as a drop in the trend line.
+        </div>
+      </div>
+      <div class="panel red">
+        <div class="panel-title">SLO Burn Rates</div>
+        <div class="panel-desc">
+          4 services monitored — api-gateway, payment-service, auth-service,
+          notification-service. <strong>CRITICAL/WARNING/ELEVATED/OK</strong>
+          status with burn rate and budget remaining %.
+        </div>
+      </div>
+      <div class="panel blue">
+        <div class="panel-title">Latency p50/p95/p99</div>
+        <div class="panel-desc">
+          3 AI services tracked — p06-code-review, p08-sre-agent, p09-eval.
+          <strong>p99 vs SLO threshold</strong> with trend direction
+          (stable / improving / degrading).
+        </div>
+      </div>
+      <div class="panel amber">
+        <div class="panel-title">LLM Cost Tracking</div>
+        <div class="panel-desc">
+          Daily cost breakdown by model — qwen2.5-0.5b, phi-3-mini, mistral-7b.
+          7-day trend with <strong>cost spike detection</strong> (alerts if today
+          is 50%+ above yesterday).
+        </div>
+      </div>
+      <div class="panel purple">
+        <div class="panel-title">Prompt Version History</div>
+        <div class="panel-desc">
+          6 prompt versions tracked across p06, p08, p09 — each with avg score,
+          request count, and description. Shows <strong>how prompt changes
+          affect quality over time</strong>.
+        </div>
+      </div>
+      <div class="panel red">
+        <div class="panel-title">Anomaly Alerts</div>
+        <div class="panel-desc">
+          4 alert detectors run on each refresh: SLO burn, latency breach,
+          cost spike, eval regression. Sorted <strong>critical → warning → info</strong>
+          with actionable recommendations.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Data Sources</div>
+    <p class="prose" style="margin-bottom:20px">
+      P10 mixes one real data source with realistic mock data. The architecture
+      is designed so any mock can be swapped for a real Prometheus/PagerDuty
+      integration without changing the dashboard code:
+    </p>
+    <div class="source-grid">
+      <div class="source-card">
+        <div class="source-badge real">REAL</div>
+        <div class="source-content">
+          <div class="source-name">P09 eval_history.db</div>
+          <div class="source-detail">SQLite file from P09 copied to data/processed/. Dashboard reads actual eval runs, scores, and pass rates via direct SQL query.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">SLO burn rates</div>
+          <div class="source-detail">Same mock Prometheus data pattern as P08. 4 services with realistic error rates — auth-service intentionally CRITICAL.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">Latency p50/p95/p99</div>
+          <div class="source-detail">Realistic latency distributions for 3 AI services with ±15% random jitter on each refresh to simulate live data.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">LLM cost tracker</div>
+          <div class="source-detail">Per-model cost calculation based on realistic token counts and pricing. 7-day history with daily breakdown.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">Prompt version store</div>
+          <div class="source-detail">6 real prompt versions with actual descriptions matching P06, P08, P09 prompt evolution over the portfolio build.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">Alert feed</div>
+          <div class="source-detail">4 realistic alerts — 1 critical (auth-service SLO), 2 warnings, 1 info (cert expiry). Mirrors real PagerDuty structure.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Anomaly Detection</div>
+    <p class="prose" style="margin-bottom:20px">
+      Four independent detectors run on every dashboard refresh.
+      Each returns structured <code>Alert</code> objects with service, message,
+      value, threshold, and an actionable recommendation:
+    </p>
+    <table class="alert-table">
+      <thead>
+        <tr><th>Detector</th><th>Trigger condition</th><th>Severity</th><th>Recommendation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SLO burn rate</td>
+          <td>burn_rate &gt; 14.4x</td>
+          <td class="sev-critical">CRITICAL</td>
+          <td style="font-size:12px">Page on-call immediately. Check recent deploys.</td>
+        </tr>
+        <tr>
+          <td>SLO burn rate</td>
+          <td>burn_rate &gt; 6x</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Investigate error rate. Review slow query logs.</td>
+        </tr>
+        <tr>
+          <td>Latency</td>
+          <td>p99 &gt; 100% of SLO</td>
+          <td class="sev-critical">CRITICAL</td>
+          <td style="font-size:12px">Check for slow queries or resource saturation.</td>
+        </tr>
+        <tr>
+          <td>Latency</td>
+          <td>p99 &gt; 90% of SLO</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Monitor closely — approaching SLO breach.</td>
+        </tr>
+        <tr>
+          <td>Cost spike</td>
+          <td>Today &gt; yesterday × 1.5</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Check for unusual traffic or prompt loops.</td>
+        </tr>
+        <tr>
+          <td>Eval regression</td>
+          <td>Score drop &gt; 10%</td>
+          <td class="sev-critical">CRITICAL</td>
+          <td style="font-size:12px">Block deployment. Review prompt changes.</td>
+        </tr>
+        <tr>
+          <td>Eval regression</td>
+          <td>Score drop &gt; 5%</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Investigate prompt changes. Run extended suite.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">SRE Additions</div>
@@ -427,8 +398,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Key Design Decisions -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Key Design Decisions</div>
@@ -448,8 +417,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Stack -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Tech Stack</div>
@@ -466,8 +433,6 @@ footer{padding:32px 0;text-align:center}
     </div>
   </div>
 </div>
-
-<!-- Try it -->
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
@@ -491,17 +456,22 @@ python hf_space/app.py
 <span class="cmt"># → Refresh button re-runs anomaly detection</span></pre></div>
   </div>
 </div>
-
 <div class="wrap">
-  <footer>
-    <div class="footer-links">
-      <a href="../index.html">← Portfolio</a>
-      <a href="https://github.com/amarshiv86/p10-observability" target="_blank">GitHub</a>
-      <a href="https://huggingface.co/spaces/amarshiv86/p10-observability" target="_blank">HF Space</a>
+  <div class="proj-header">
+    <div class="proj-eyebrow">P10 · Observability <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">LLM Observability Dashboard</h1>
+    <p class="proj-subtitle">
+      Unified observability dashboard for AI systems — eval scores from P09's
+      real SQLite database, SLO burn rates, latency p50/p95/p99, LLM cost
+      tracking by model, prompt version history, and anomaly-based alerting.
+      Everything an SRE needs to monitor an AI system in production.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Panels</div><div class="meta-value amber">6 dashboard panels</div></div>
+      <div class="meta-item"><div class="meta-label">Real data</div><div class="meta-value green">P09 eval SQLite DB</div></div>
+      <div class="meta-item"><div class="meta-label">Alert types</div><div class="meta-value">SLO · latency · cost · eval</div></div>
+      <div class="meta-item"><div class="meta-label">Services</div><div class="meta-value">4 SLO + 3 latency</div></div>
+      <div class="meta-item"><div class="meta-label">UI</div><div class="meta-value">Gradio 5</div></div>
     </div>
-    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
-  </footer>
+  </div>
 </div>
-
-</body>
-</html>

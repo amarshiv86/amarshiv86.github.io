@@ -405,14 +405,30 @@ section { padding: 72px 0; border-bottom: 1px solid var(--border); }
   font-size: 11px;
   padding: 4px 10px;
   border-radius: 4px;
-  background: var(--bg3);
-  color: var(--muted);
-  border: 1px solid var(--border);
+  background: var(--text);
+  color: #fff;
+  border: 1px solid var(--text);
   text-decoration: none;
   font-weight: 500;
   transition: all 0.15s;
 }
-.card-link-demo:hover { background: var(--text); color: #fff; border-color: var(--text); }
+.card-link-demo:hover { background: #343a40; border-color: #343a40; }
+.card-link-live {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+  margin-left: 6px;
+}
+.card-link-live:hover { background: var(--green); opacity: 0.85; }
+/* For P09/P12: group Details + Live Demo together on the right */
+.card-links-right {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.card-links-right .card-link-demo {
+  margin-left: 0;
+}
 
 /* ── Skills ─────────────────────────────────────────── */
 .skills-grid {
@@ -770,7 +786,10 @@ footer {
         </div>
         <div class="card-links">
           <a href="https://github.com/amarshiv86/p09-llm-eval" target="_blank" class="card-link">GitHub ↗</a>
-          <a href="https://huggingface.co/spaces/amarshiv86/p09-llm-eval" target="_blank" class="card-link-demo">Live Demo</a>
+          <div class="card-links-right">
+            <a href="./projects/p09-eval.html" class="card-link-demo">Details →</a>
+            <a href="https://huggingface.co/spaces/amarshiv86/p09-llm-eval" target="_blank" class="card-link-demo card-link-live">Live Demo</a>
+          </div>
         </div>
       </div>
 
@@ -812,7 +831,10 @@ footer {
         </div>
         <div class="card-links">
           <a href="https://github.com/amarshiv86/p12-sre-mcp" target="_blank" class="card-link">GitHub ↗</a>
-          <a href="https://huggingface.co/spaces/amarshiv86/p12-sre-mcp" target="_blank" class="card-link-demo">Live Demo</a>
+          <div class="card-links-right">
+            <a href="./projects/p12-mcp.html" class="card-link-demo">Details →</a>
+            <a href="https://huggingface.co/spaces/amarshiv86/p12-sre-mcp" target="_blank" class="card-link-demo card-link-live">Live Demo</a>
+          </div>
         </div>
       </div>
 

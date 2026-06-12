@@ -103,7 +103,7 @@ footer{padding:32px 0;text-align:center}
 <div class="wrap">
   <div class="proj-header">
     <div class="proj-eyebrow">P05 · RAG · Scheduled Pipeline <span class="proj-badge">Paused</span></div>
-    <h1 class="proj-title">Financial News<br>RAG Pipeline</h1>
+    <h1 class="proj-title">Financial News RAG Pipeline</h1>
     <p class="proj-subtitle">
       Automated daily ingestion from 5 financial RSS feeds into ChromaDB,
       served via FastAPI with ticker filtering, full-text search, and
@@ -173,22 +173,6 @@ footer{padding:32px 0;text-align:center}
       Each article is tagged with which tickers appear in the title or summary,
       enabling filtered queries like "news about NVDA only".
     </p>
-  </div>
-</div>
-
-<!-- How it works -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">How it works</div>
-    <ul class="steps">
-      <li><div class="step-num">1</div><div class="step-content"><strong>GitHub Actions cron</strong> — triggers ingest.py daily at 6am UTC. Also runs on every push to src/ for testing.</div></li>
-      <li><div class="step-num">2</div><div class="step-content"><strong>RSS fetch</strong> — feedparser pulls up to 20 entries from each of 5 feeds. Failed feeds are caught and skipped without stopping the pipeline.</div></li>
-      <li><div class="step-num">3</div><div class="step-content"><strong>Deduplication</strong> — MD5 hash of article URL checked against ingested_ids.json. Only new articles proceed to embedding. Prevents the index from growing with duplicates on each daily run.</div></li>
-      <li><div class="step-num">4</div><div class="step-content"><strong>Lightweight embedding</strong> — custom 128-dim word frequency vector using MD5 hashing. No torch, no GPU, no external API — runs in GitHub Actions CI without heavy dependencies.</div></li>
-      <li><div class="step-num">5</div><div class="step-content"><strong>ChromaDB indexing</strong> — articles stored with metadata: source, link, date, detected tickers. Persistent ChromaDB at data/chroma_db/.</div></li>
-      <li><div class="step-num">6</div><div class="step-content"><strong>Push to HF Dataset</strong> — updated ChromaDB pushed to amarshiv86/financial-news-db HF Dataset. This is the "database" that the API reads from.</div></li>
-      <li><div class="step-num">7</div><div class="step-content"><strong>FastAPI startup</strong> — API downloads ChromaDB from HF Dataset at startup. Subsequent restarts use the cached local copy. Serves /query, /news, /health endpoints.</div></li>
-    </ul>
   </div>
 </div>
 
@@ -279,6 +263,22 @@ footer{padding:32px 0;text-align:center}
     <path d="M290 438 L360 438 L360 228 L400 228" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr5)"/>
     <text x="360" y="340" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#334155" transform="rotate(90,360,340)">pulls at startup</text>
     </svg>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>GitHub Actions cron</strong> — triggers ingest.py daily at 6am UTC. Also runs on every push to src/ for testing.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>RSS fetch</strong> — feedparser pulls up to 20 entries from each of 5 feeds. Failed feeds are caught and skipped without stopping the pipeline.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>Deduplication</strong> — MD5 hash of article URL checked against ingested_ids.json. Only new articles proceed to embedding. Prevents the index from growing with duplicates on each daily run.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>Lightweight embedding</strong> — custom 128-dim word frequency vector using MD5 hashing. No torch, no GPU, no external API — runs in GitHub Actions CI without heavy dependencies.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>ChromaDB indexing</strong> — articles stored with metadata: source, link, date, detected tickers. Persistent ChromaDB at data/chroma_db/.</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>Push to HF Dataset</strong> — updated ChromaDB pushed to amarshiv86/financial-news-db HF Dataset. This is the "database" that the API reads from.</div></li>
+      <li><div class="step-num">7</div><div class="step-content"><strong>FastAPI startup</strong> — API downloads ChromaDB from HF Dataset at startup. Subsequent restarts use the cached local copy. Serves /query, /news, /health endpoints.</div></li>
+    </ul>
   </div>
 </div>
 

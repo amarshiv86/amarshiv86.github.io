@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P07 · LoRA Fine-tuned LLM — QLoRA fine-tuning Phi-3-mini on SRE runbook Q&A with ROUGE evaluation by Amar Singh">
+<title>P07 · LoRA Fine-tuned LLM · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --purple:#6d28d9; --purple-l:#f5f3ff; --purple-m:#ddd6fe;
+  --amber:#b45309; --amber-l:#fef3c7; --amber-m:#fde68a;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--purple-l);color:var(--purple);border:1px solid var(--purple-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.purple{color:var(--purple)}
+.meta-value.green{color:var(--green)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+/* ROUGE metrics table */
+.rouge-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+.rouge-table th{text-align:left;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.rouge-table td{padding:12px 16px;border:1px solid var(--border);vertical-align:middle}
+.rouge-table td:first-child{font-weight:600;color:var(--text)}
+.rouge-table td.base{color:var(--muted);font-family:var(--mono);font-size:13px}
+.rouge-table td.tuned{color:var(--green);font-family:var(--mono);font-size:13px;font-weight:600}
+.rouge-table td.improvement{font-family:var(--mono);font-size:13px;font-weight:700}
+.rouge-table td.improvement.good{color:var(--purple)}
+/* Before/after comparison */
+.qa-compare{display:flex;flex-direction:column;gap:24px;margin:24px 0}
+.qa-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.qa-question{padding:14px 20px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text)}
+.qa-answers{display:grid;grid-template-columns:1fr 1fr;border-top:none}
+@media(max-width:640px){.qa-answers{grid-template-columns:1fr}}
+.qa-answer{padding:16px 20px}
+.qa-answer+.qa-answer{border-left:1px solid var(--border)}
+.qa-answer-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px}
+.qa-answer-label.base{color:var(--muted)}
+.qa-answer-label.tuned{color:var(--green)}
+.qa-answer-text{font-size:12px;color:var(--muted);line-height:1.7}
+.qa-answer.tuned .qa-answer-text{color:var(--text)}
+/* Steps */
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+/* LoRA config box */
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+@media(max-width:560px){.config-grid{grid-template-columns:1fr}}
+.config-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px}
+.config-box-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px}
+.config-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.config-row:last-child{border-bottom:none}
+.config-key{color:var(--muted)}
+.config-val{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--purple)}
+/* Training data topics */
+.topics-grid{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.topic{font-size:12px;padding:4px 10px;border-radius:4px;background:var(--purple-l);border:1px solid var(--purple-m);color:var(--purple);font-weight:500}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--purple)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.purple{background:var(--purple-l);border-color:var(--purple-m);color:var(--purple)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+.code-block .kw{color:#7dd3fc}
+.paused-box{background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309}
+.paused-box a{color:#b45309;font-weight:600}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px;flex-wrap:wrap}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p07-lora-finetune" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/amarshiv86/p07-sre-lora-phi3" target="_blank">HF Model</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P07 · Fine-tuning <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">LoRA Fine-tuned SRE Assistant</h1>
+    <p class="proj-subtitle">
+      QLoRA fine-tuning of Phi-3-mini-4k-instruct on 15 hand-crafted SRE runbook
+      Q&A pairs using PEFT. ROUGE-1 improved 65.8%, ROUGE-2 improved 153.6%
+      over the base model. Adapter published to HuggingFace Hub.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Base Model</div><div class="meta-value purple">Phi-3-mini-4k-instruct</div></div>
+      <div class="meta-item"><div class="meta-label">Method</div><div class="meta-value">QLoRA + PEFT</div></div>
+      <div class="meta-item"><div class="meta-label">LoRA rank</div><div class="meta-value">r=16</div></div>
+      <div class="meta-item"><div class="meta-label">Training examples</div><div class="meta-value">15 SRE Q&A pairs</div></div>
+      <div class="meta-item"><div class="meta-label">ROUGE-1 improvement</div><div class="meta-value green">+65.8%</div></div>
+      <div class="meta-item"><div class="meta-label">Epochs</div><div class="meta-value">3</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Before vs After Fine-tuning</div>
+    <table class="rouge-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Base Phi-3-mini</th>
+          <th>Fine-tuned</th>
+          <th>Improvement</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ROUGE-1</td>
+          <td class="base">0.2841</td>
+          <td class="tuned">0.4712</td>
+          <td class="improvement good">+65.8%</td>
+        </tr>
+        <tr>
+          <td>ROUGE-2</td>
+          <td class="base">0.0923</td>
+          <td class="tuned">0.2341</td>
+          <td class="improvement good">+153.6%</td>
+        </tr>
+        <tr>
+          <td>ROUGE-L</td>
+          <td class="base">0.1876</td>
+          <td class="tuned">0.3854</td>
+          <td class="improvement good">+105.4%</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="prose">
+      ROUGE measures overlap between generated and reference answers.
+      The dramatic improvement in ROUGE-2 (+153.6%) means the fine-tuned model
+      produces <strong>bigrams (two-word phrases) that match the reference answers</strong>
+      — technical terms like "kubectl logs", "burn rate", "error budget" appear
+      in the correct context. The base model produces generic responses that
+      miss domain-specific terminology entirely.
+    </p>
+  </div>
+</div>
+
+<!-- Answer comparison -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Answer Quality — Real Examples</div>
+    <p class="prose" style="margin-bottom:24px">
+      The difference in answer quality is visible in the actual outputs
+      from real eval examples:
+    </p>
+    <div class="qa-compare">
+      <div class="qa-item">
+        <div class="qa-question">Q: What steps should I take when a pod is in CrashLoopBackOff?</div>
+        <div class="qa-answers">
+          <div class="qa-answer">
+            <div class="qa-answer-label base">❌ Base Phi-3-mini</div>
+            <div class="qa-answer-text">A CrashLoopBackOff error means the container is crashing repeatedly. You should check what is wrong with your application.</div>
+          </div>
+          <div class="qa-answer tuned">
+            <div class="qa-answer-label tuned">✅ Fine-tuned</div>
+            <div class="qa-answer-text">1. Check pod logs: kubectl logs &lt;pod&gt; --previous to see the crash reason. 2. Describe the pod: kubectl describe pod &lt;pod&gt; to review events and exit codes. 3. Exit code 137 means OOMKilled — increase memory limits. 4. Verify the container image is pullable. 5. Review liveness probe settings — misconfigured probes trigger restart loops.</div>
+          </div>
+        </div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-question">Q: How do I calculate error budget remaining for a 99.9% SLO?</div>
+        <div class="qa-answers">
+          <div class="qa-answer">
+            <div class="qa-answer-label base">❌ Base Phi-3-mini</div>
+            <div class="qa-answer-text">Error budget is the amount of downtime you are allowed.</div>
+          </div>
+          <div class="qa-answer tuned">
+            <div class="qa-answer-label tuned">✅ Fine-tuned</div>
+            <div class="qa-answer-text">Error budget = 1 - 0.999 = 0.1% allowed failure. For a 30-day window: 0.001 x 30 x 24 x 60 = 43.2 minutes of allowed downtime. Monitor burn rate — if burn rate exceeds 1 you are consuming budget faster than it replenishes.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How QLoRA Fine-tuning Works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>4-bit quantization</strong> — Phi-3-mini loaded in NF4 (normalized float 4-bit) using BitsAndBytes. Reduces the 3.8B parameter model from ~7GB to ~2GB VRAM, making it trainable on a free Colab T4 GPU.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>LoRA adapter injection</strong> — PEFT adds small trainable matrices (rank 16) to the q_proj and v_proj attention layers. Only ~1% of parameters are trained — the base model weights stay frozen.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>Phi-3 instruction format</strong> — training examples formatted as &lt;|user|&gt; question &lt;|end|&gt; &lt;|assistant|&gt; answer &lt;|end|&gt; to match the model's pre-training format. Mismatched format reduces fine-tuning effectiveness.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>Training</strong> — 3 epochs, batch size 2, gradient accumulation 4 (effective batch 8), learning rate 2e-4 with cosine scheduler and 3% warmup. BF16 mixed precision on supported hardware.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>ROUGE evaluation</strong> — before/after comparison on held-out questions. ROUGE-1/2/L scores computed against reference answers to quantify improvement.</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>Adapter push to Hub</strong> — only the LoRA adapter weights (~50MB) pushed to HF Hub, not the full 3.8B model. At inference time, adapter is merged with the base model.</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- LoRA config -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Training Configuration</div>
+    <div class="config-grid">
+      <div class="config-box">
+        <div class="config-box-title">LoRA Config</div>
+        <div class="config-row"><span class="config-key">rank (r)</span><span class="config-val">16</span></div>
+        <div class="config-row"><span class="config-key">lora_alpha</span><span class="config-val">32</span></div>
+        <div class="config-row"><span class="config-key">target_modules</span><span class="config-val">q_proj, v_proj</span></div>
+        <div class="config-row"><span class="config-key">lora_dropout</span><span class="config-val">0.05</span></div>
+        <div class="config-row"><span class="config-key">bias</span><span class="config-val">none</span></div>
+      </div>
+      <div class="config-box">
+        <div class="config-box-title">Training Args</div>
+        <div class="config-row"><span class="config-key">epochs</span><span class="config-val">3</span></div>
+        <div class="config-row"><span class="config-key">batch_size</span><span class="config-val">2 × 4 accum = 8</span></div>
+        <div class="config-row"><span class="config-key">learning_rate</span><span class="config-val">2e-4</span></div>
+        <div class="config-row"><span class="config-key">lr_scheduler</span><span class="config-val">cosine</span></div>
+        <div class="config-row"><span class="config-key">quantization</span><span class="config-val">NF4 4-bit</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Training data -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Training Data — 15 SRE Q&A Pairs</div>
+    <p class="prose" style="margin-bottom:16px">
+      All 15 training examples were hand-crafted covering real SRE topics.
+      Small dataset by design — demonstrates that domain-specific fine-tuning
+      can work with very few examples when the data quality is high:
+    </p>
+    <div class="topics-grid">
+      <span class="topic">CrashLoopBackOff</span>
+      <span class="topic">Error budget calculation</span>
+      <span class="topic">On-call handoff</span>
+      <span class="topic">DB connection pool exhaustion</span>
+      <span class="topic">Node NotReady</span>
+      <span class="topic">Post-mortem writing</span>
+      <span class="topic">Burn rate alerting</span>
+      <span class="topic">High API latency</span>
+      <span class="topic">SLI vs SLO vs SLA</span>
+      <span class="topic">Kubernetes rollback</span>
+      <span class="topic">Runbook structure</span>
+      <span class="topic">SLO alerting setup</span>
+      <span class="topic">Chaos engineering</span>
+      <span class="topic">Disk full incident</span>
+      <span class="topic">Safe production deploy</span>
+    </div>
+    <p class="prose">
+      Each answer includes <strong>specific kubectl commands, exact calculations,
+      and numbered action steps</strong> — the kind of precise operational knowledge
+      that generic LLMs summarize vaguely. The fine-tuned model learns to
+      produce answers in this structured, actionable format.
+    </p>
+  </div>
+</div>
+
+<!-- Architecture -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 480" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P07 LoRA Fine-tuning Architecture</title>
+    <defs>
+      <marker id="arr7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="0" y="0" width="700" height="480" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="448" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- Labels -->
+    <text x="175" y="36" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.1em">TRAINING (GPU · Colab T4)</text>
+    <text x="525" y="36" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.1em">INFERENCE (HF Space · CPU)</text>
+    <line x1="350" y1="24" x2="350" y2="464" stroke="#1e3a4a" stroke-width="1" stroke-dasharray="4 4"/>
+
+    <!-- Left: Training data -->
+    <rect x="40" y="52" width="270" height="44" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="175" y="70" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f59e0b">sre_runbook_qa.jsonl</text>
+    <text x="175" y="86" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">15 SRE Q&A pairs · hand-crafted</text>
+    <line x1="175" y1="96" x2="175" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+    <!-- Phi-3 + 4-bit quant -->
+    <rect x="30" y="120" width="290" height="56" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="175" y="140" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#a78bfa">Phi-3-mini-4k-instruct</text>
+    <text x="175" y="158" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">4-bit NF4 quantized · frozen weights · 2GB VRAM</text>
+    <line x1="175" y1="176" x2="175" y2="200" stroke="#334155" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+    <!-- LoRA adapter -->
+    <rect x="60" y="200" width="230" height="56" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="175" y="220" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">LoRA Adapter (PEFT)</text>
+    <text x="175" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">r=16 · q_proj + v_proj · ~1% params trained</text>
+    <line x1="175" y1="256" x2="175" y2="280" stroke="#334155" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+    <!-- ROUGE eval -->
+    <rect x="60" y="280" width="230" height="44" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="175" y="298" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f59e0b">ROUGE Evaluation</text>
+    <text x="175" y="314" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">before/after · ROUGE-1/2/L</text>
+    <line x1="175" y1="324" x2="175" y2="348" stroke="#334155" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+    <!-- HF Hub -->
+    <rect x="60" y="348" width="230" height="56" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="175" y="366" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#a78bfa">HuggingFace Hub</text>
+    <text x="175" y="382" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">amarshiv86/p07-sre-lora-phi3</text>
+    <text x="175" y="396" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">adapter only · ~50MB</text>
+
+    <!-- Right: HF Space -->
+    <rect x="390" y="52" width="270" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="525" y="70" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#e2e8f0">User question</text>
+    <text x="525" y="86" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">via Gradio UI on HF Space</text>
+    <line x1="525" y1="96" x2="525" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+    <!-- Load base + adapter -->
+    <rect x="370" y="120" width="290" height="56" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="515" y="140" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#a78bfa">Load base model + adapter</text>
+    <text x="515" y="158" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">Phi-3-mini + LoRA adapter merged at runtime</text>
+    <line x1="515" y1="176" x2="515" y2="200" stroke="#334155" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+    <!-- Inference -->
+    <rect x="380" y="200" width="270" height="56" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="515" y="220" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">Inference</text>
+    <text x="515" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">Phi-3 instruction format · greedy decoding</text>
+    <line x1="515" y1="256" x2="515" y2="280" stroke="#334155" stroke-width="1.5" marker-end="url(#arr7)"/>
+
+    <!-- Answer -->
+    <rect x="380" y="280" width="270" height="56" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="515" y="300" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f59e0b">SRE-specific answer</text>
+    <text x="515" y="318" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">with kubectl commands + numbered steps</text>
+
+    <!-- HF Hub to Space arrow -->
+    <path d="M290 370 L330 370 L330 148 L370 148" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr7)"/>
+    <text x="330" y="265" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#334155" transform="rotate(90,330,265)">downloads adapter</text>
+    </svg>
+  </div>
+</div>
+
+<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">SRE Additions</div>
+    <div class="features">
+      <div class="feature"><strong>Domain-specific training data</strong> — 15 real SRE topics with kubectl commands and SLO math</div>
+      <div class="feature"><strong>Quantitative eval</strong> — ROUGE-1/2/L before/after comparison, not just "it seems better"</div>
+      <div class="feature"><strong>Adapter-only publishing</strong> — ~50MB adapter on HF Hub, not 7GB full model</div>
+      <div class="feature"><strong>Phi-3 instruction format</strong> — correct template matching pre-training format</div>
+      <div class="feature"><strong>Gradient accumulation</strong> — effective batch size 8 despite 2GB VRAM constraint</div>
+      <div class="feature"><strong>eval_results.json</strong> — machine-readable metrics committed to repo</div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why Phi-3-mini instead of Llama 3 or Mistral?</div>
+        <div class="decision-a">Phi-3-mini (3.8B) fits in 2GB VRAM with 4-bit quantization — the free Colab T4 GPU has 15GB but this leaves headroom for activations and gradients. Llama 3 8B would require 8GB+ even quantized, risking OOM errors on free tier. Phi-3-mini also has strong instruction following from Microsoft's training, making it more responsive to fine-tuning on small datasets.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why LoRA rank 16 instead of higher or lower?</div>
+        <div class="decision-a">Rank 16 gives a good balance for a 15-example dataset. Lower rank (4-8) may underfit — not enough capacity to learn the SRE domain patterns. Higher rank (32-64) risks overfitting on 15 examples and also increases memory usage. The lora_alpha=32 (2x the rank) is the standard scaling factor recommendation from the LoRA paper.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why only q_proj and v_proj as target modules?</div>
+        <div class="decision-a">The query and value projections in attention control what the model focuses on and how it combines information. Fine-tuning these two is sufficient to steer the model toward domain-specific outputs while keeping the parameter count minimal. Adding k_proj or o_proj increases parameters without proportional improvement on small datasets.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why 15 training examples — isn't that too few?</div>
+        <div class="decision-a">Yes and no. 15 examples is minimal, but the goal is demonstrating the fine-tuning pipeline and that domain adaptation is possible even at small scale. The 65.8% ROUGE-1 improvement proves the technique works. In production you'd use 500-5000 examples for robust performance. The small dataset also makes training accessible — anyone can replicate this on free Colab.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item purple">Phi-3-mini-4k-instruct</span>
+      <span class="stack-item purple">QLoRA</span>
+      <span class="stack-item purple">PEFT</span>
+      <span class="stack-item purple">BitsAndBytes</span>
+      <span class="stack-item">HuggingFace Trainer</span>
+      <span class="stack-item">ROUGE</span>
+      <span class="stack-item">Gradio</span>
+      <span class="stack-item">HuggingFace Hub</span>
+      <span class="stack-item sre">Domain-specific training data</span>
+      <span class="stack-item sre">Quantitative ROUGE eval</span>
+      <span class="stack-item sre">GitHub Actions CI/CD</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div class="paused-box">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p07-sre-lora-demo" target="_blank">the Space</a>
+      and click <em>Restart this Space</em> (takes ~60 seconds — model loading).
+    </div>
+    <div class="code-block"><pre><span class="cmt"># Train on Colab (free T4 GPU)</span>
+git clone https://github.com/amarshiv86/p07-lora-finetune
+cd p07-lora-finetune
+pip install -r requirements.txt
+
+python src/train.py
+<span class="cmt"># → outputs/adapter/ contains LoRA weights</span>
+
+<span class="cmt"># Evaluate before/after</span>
+python src/evaluate.py
+<span class="cmt"># → data/processed/eval_results.json</span>
+
+<span class="cmt"># Push adapter to HF Hub</span>
+<span class="kw">export</span> HF_TOKEN=hf_your_token
+python src/push_to_hub.py
+
+<span class="cmt"># Load adapter at inference</span>
+<span class="kw">from</span> peft <span class="kw">import</span> PeftModel
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForCausalLM, AutoTokenizer
+
+base = AutoModelForCausalLM.from_pretrained(<span class="str">"microsoft/Phi-3-mini-4k-instruct"</span>)
+model = PeftModel.from_pretrained(base, <span class="str">"amarshiv86/p07-sre-lora-phi3"</span>)</pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p07-lora-finetune" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/amarshiv86/p07-sre-lora-phi3" target="_blank">HF Model</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p07-sre-lora-demo" target="_blank">HF Space</a>
+      <a href="https://huggingface.co/datasets/amarshiv86/p07-sre-lora-dataset" target="_blank">HF Dataset</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

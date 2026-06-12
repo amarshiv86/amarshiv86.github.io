@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P08 · SRE Ops Agent — ReAct pattern with 5 tools, human-in-the-loop approval, and local LLM by Amar Singh">
+<title>P08 · SRE Ops Agent · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --red:#b91c1c; --red-l:#fef2f2; --red-m:#fecaca;
+  --amber:#b45309; --amber-l:#fef3c7; --amber-m:#fde68a;
+  --blue:#1d4ed8; --blue-l:#eff6ff; --blue-m:#bfdbfe;
+  --purple:#6d28d9; --purple-l:#f5f3ff; --purple-m:#ddd6fe;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--red-l);color:var(--red);border:1px solid var(--red-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.red{color:var(--red)}
+.meta-value.green{color:var(--green)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+/* ReAct loop diagram */
+.react-loop{display:flex;align-items:center;justify-content:center;gap:0;margin:24px 0;flex-wrap:wrap}
+.react-step{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 20px;text-align:center;min-width:120px}
+.react-step-label{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.react-step-name{font-size:14px;font-weight:600;color:var(--text)}
+.react-step.reason{border-top:3px solid var(--blue)}
+.react-step.act{border-top:3px solid var(--green)}
+.react-step.observe{border-top:3px solid var(--purple)}
+.react-arrow{font-size:20px;color:var(--light);padding:0 8px}
+/* Tools grid */
+.tools-grid{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.tool-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:start}
+.tool-name{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);white-space:nowrap}
+.tool-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.tool-desc strong{color:var(--text);font-weight:500}
+.tool-badge{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:4px;white-space:nowrap;font-weight:600}
+.tool-badge.safe{background:var(--green-l);color:var(--green);border:1px solid var(--green-m)}
+.tool-badge.approval{background:var(--red-l);color:var(--red);border:1px solid var(--red-m)}
+/* Trace example */
+.trace-box{background:#0d1117;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.trace-box pre{font-family:var(--mono);font-size:12px;color:#c9d1d9;line-height:2}
+.trace-box .thought{color:#79c0ff}
+.trace-box .tool{color:#ffa657}
+.trace-box .result{color:#56d364}
+.trace-box .warn{color:#e3b341}
+.trace-box .answer{color:#a5d6ff}
+.trace-box .approve{color:#56d364}
+/* Steps */
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);background:var(--red-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--red)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.red{background:var(--red-l);border-color:var(--red-m);color:var(--red)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+.code-block .kw{color:#7dd3fc}
+.paused-box{background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309}
+.paused-box a{color:#b45309;font-weight:600}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px;flex-wrap:wrap}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p08-sre-agent" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P08 · Agents <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">SRE Ops Agent with Tools</h1>
+    <p class="proj-subtitle">
+      ReAct agent that answers SRE on-call queries using 5 real tools —
+      SLO status, runbook lookup, alert queries, error budget calculation,
+      and real HTTP health checks. External calls require human-in-the-loop
+      approval before executing. Every step is traced and visible.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Pattern</div><div class="meta-value red">ReAct (Reason+Act)</div></div>
+      <div class="meta-item"><div class="meta-label">LLM</div><div class="meta-value">Qwen2.5-0.5B · local</div></div>
+      <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-value green">5 tools</div></div>
+      <div class="meta-item"><div class="meta-label">Max steps</div><div class="meta-value">5 per query</div></div>
+      <div class="meta-item"><div class="meta-label">Safety</div><div class="meta-value">Human-in-the-loop</div></div>
+      <div class="meta-item"><div class="meta-label">Trace</div><div class="meta-value">Full step visibility</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ReAct Pattern -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">The ReAct Pattern</div>
+    <p class="prose" style="margin-bottom:24px">
+      ReAct (Reason + Act) is the standard pattern for LLM agents that use tools.
+      Instead of answering directly from training data, the agent loops through
+      three phases until it has enough information to answer:
+    </p>
+    <div class="react-loop">
+      <div class="react-step reason">
+        <div class="react-step-label">Phase 1</div>
+        <div class="react-step-name">🤔 Reason</div>
+      </div>
+      <div class="react-arrow">→</div>
+      <div class="react-step act">
+        <div class="react-step-label">Phase 2</div>
+        <div class="react-step-name">🔧 Act</div>
+      </div>
+      <div class="react-arrow">→</div>
+      <div class="react-step observe">
+        <div class="react-step-label">Phase 3</div>
+        <div class="react-step-name">👁 Observe</div>
+      </div>
+      <div class="react-arrow">→</div>
+      <div class="react-step reason" style="opacity:0.6">
+        <div class="react-step-label">Repeat</div>
+        <div class="react-step-name">🤔 Reason</div>
+      </div>
+    </div>
+    <p class="prose" style="margin-top:20px">
+      The LLM decides <strong>which tool to call and with what arguments</strong>
+      based on the query and previous observations. After each tool call it sees
+      the result and decides whether to call another tool or produce a final answer.
+      This continues for up to 5 steps.
+    </p>
+  </div>
+</div>
+
+<!-- Tools -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">5 Tools</div>
+    <p class="prose" style="margin-bottom:20px">
+      Each tool is a Python function registered in the TOOLS dict with a
+      description, argument spec, and <code>requires_approval</code> flag:
+    </p>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="tool-name">check_slo_status</div>
+        <div class="tool-desc">Checks SLO burn rate and error budget for a service. Returns status (OK/ELEVATED/WARNING/CRITICAL), burn rate 1h/6h, budget remaining %. <strong>Mock Prometheus data</strong> for 4 services.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">get_runbook</div>
+        <div class="tool-desc">Fetches runbook steps for an alert name. <strong>Real file lookup</strong> from runbooks.jsonl — supports exact and fuzzy matching. Returns alert name, severity, steps, escalation path.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">query_recent_alerts</div>
+        <div class="tool-desc">Returns currently firing alerts filtered by severity. <strong>Mock PagerDuty data</strong> — 3 realistic alerts with service, duration, summary. Filterable by critical/warning/all.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">calculate_error_budget</div>
+        <div class="tool-desc"><strong>Pure math</strong> — calculates allowed downtime for any SLO target and window. Returns budget in minutes and hours, consumed vs remaining. Always works, no dependencies.</div>
+        <div class="tool-badge safe">No approval</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">check_service_health</div>
+        <div class="tool-desc"><strong>Real HTTP call</strong> to any URL — returns status code, latency, response size. The only tool that makes external network calls, which is why it requires human approval before executing.</div>
+        <div class="tool-badge approval">⚠ Requires approval</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Human-in-the-loop -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Human-in-the-Loop Approval</div>
+    <p class="prose" style="margin-bottom:20px">
+      When the agent decides to call <code>check_service_health</code>,
+      it pauses and presents the pending call to the user for approval.
+      The agent state is preserved — approve continues from exactly where
+      it stopped, reject sends the error back as a tool result:
+    </p>
+    <div class="trace-box"><pre><span class="thought">🤔 Thought: I need to check the auth-service error rate first.</span>
+
+<span class="tool">🔧 Tool: check_slo_status → {"service_name": "auth-service"}</span>
+
+<span class="result">✅ Result (2ms): {
+  "service": "auth-service",
+  "status": "CRITICAL",
+  "burn_rate_1h": 4.5,
+  "budget_remaining_pct": 97.2,
+  "action_required": "Investigate — exhausts budget in &lt;5 days"
+}</span>
+
+<span class="thought">🤔 Thought: CRITICAL status. Let me check the health endpoint directly.</span>
+
+<span class="tool">🔧 Tool: check_service_health → {"url": "https://auth-service.internal/health"}</span>
+
+<span class="warn">⚠️ Approval needed for: check_service_health({"url": "https://auth-service.internal/health"})</span>
+
+<span class="approve">✅ Approved: check_service_health(...)</span>
+
+<span class="result">✅ Result (312ms): {
+  "status_code": 200,
+  "healthy": true,
+  "latency_ms": 312
+}</span>
+
+<span class="answer">ANSWER: auth-service is CRITICAL — burn rate 4.5x (SLO: 99.9%).
+Health endpoint responds 200 in 312ms. Error rate 0.45% vs 0.1% threshold.
+Action: check recent deployments and review slow query logs.</span></pre></div>
+  </div>
+</div>
+
+<!-- Architecture -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 600" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P08 SRE Agent Architecture</title>
+    <defs>
+      <marker id="arr8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="0" y="0" width="700" height="600" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="568" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- ROW 1: SRE Query (centered) -->
+    <rect x="250" y="36" width="180" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="54" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">SRE Query</text>
+    <text x="340" y="70" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">via Gradio UI</text>
+    <line x1="340" y1="80" x2="340" y2="104" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+    <!-- ROW 2: SREAgent (full width) -->
+    <rect x="100" y="112" width="480" height="52" rx="6" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="340" y="132" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#f87171">SREAgent — ReAct Loop</text>
+    <text x="340" y="150" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#ef4444">Reason → Act → Observe · max 5 steps</text>
+    <line x1="340" y1="164" x2="340" y2="188" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+    <!-- ROW 3: LLM (full width) -->
+    <rect x="100" y="196" width="480" height="52" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="340" y="216" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#a78bfa">Qwen2.5-0.5B · local inference</text>
+    <text x="340" y="234" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">decides: TOOL + ARGS  or  ANSWER</text>
+
+    <!-- T-junction branch: left = tool call, right = answer -->
+    <line x1="340" y1="248" x2="340" y2="260" stroke="#334155" stroke-width="1.5"/>
+    <line x1="180" y1="260" x2="520" y2="260" stroke="#334155" stroke-width="1.5"/>
+    <line x1="180" y1="260" x2="180" y2="284" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <line x1="520" y1="260" x2="520" y2="284" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <text x="240" y="256" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#475569">tool call</text>
+    <text x="450" y="256" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#475569">final answer</text>
+
+    <!-- ROW 4 LEFT col: requires_approval? -->
+    <rect x="60" y="284" width="240" height="52" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="180" y="304" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#94a3b8">requires_approval?</text>
+    <text x="180" y="322" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">check tool registry flag</text>
+
+    <!-- ROW 4 RIGHT col: Final Answer -->
+    <rect x="390" y="284" width="240" height="52" rx="6" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="510" y="304" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#60a5fa">Final Answer</text>
+    <text x="510" y="322" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">ANSWER: returned to user</text>
+
+    <!-- YES branch: goes left then down to Pause -->
+    <line x1="60" y1="310" x2="36" y2="310" stroke="#334155" stroke-width="1.5"/>
+    <line x1="36" y1="310" x2="36" y2="376" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <text x="25" y="344" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#ef4444" transform="rotate(-90,25,344)">YES</text>
+
+    <!-- NO branch: goes straight down to Execute -->
+    <line x1="180" y1="336" x2="180" y2="376" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <text x="192" y="357" font-family="Inter,sans-serif" font-size="10" fill="#64748b">NO</text>
+
+    <!-- ROW 5 LEFT: Pause box (x=28, width=120) — well separated from Execute -->
+    <rect x="28" y="376" width="120" height="52" rx="6" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="88" y="396" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f87171">⚠ Pause</text>
+    <text x="88" y="414" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#ef4444">human approves</text>
+
+    <!-- ROW 5 MIDDLE: Execute tool (x=158, well clear of Pause) -->
+    <rect x="158" y="376" width="200" height="52" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="258" y="396" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">Execute tool</text>
+    <text x="258" y="414" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">ToolResult + latency_ms</text>
+
+    <!-- Approve arrow: Pause → Execute -->
+    <line x1="148" y1="402" x2="158" y2="402" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 2" marker-end="url(#arr8)"/>
+
+    <!-- Execute → Observation -->
+    <line x1="258" y1="428" x2="258" y2="456" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+    <!-- ROW 6: Observation -->
+    <rect x="118" y="456" width="280" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="258" y="474" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#94a3b8">Observation added to state</text>
+    <text x="258" y="490" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">loop continues → LLM reasons again</text>
+
+    <!-- Loop back arrow: observation → LLM — routes right edge outside all boxes -->
+    <path d="M398 478 L660 478 L660 222 L580 222" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr8)"/>
+    <text x="672" y="355" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#475569" transform="rotate(90,672,355)">loop back</text>
+
+    <!-- ROW 7: Tool registry -->
+    <text x="340" y="522" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.08em">TOOL REGISTRY</text>
+    <rect x="28"  y="532" width="106" height="30" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="81"  y="547" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">check_slo</text>
+    <rect x="142" y="532" width="106" height="30" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="195" y="547" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">get_runbook</text>
+    <rect x="256" y="532" width="106" height="30" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="309" y="547" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">query_alerts</text>
+    <rect x="370" y="532" width="106" height="30" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="423" y="547" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">error_budget</text>
+    <rect x="484" y="532" width="116" height="30" rx="4" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="542" y="547" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#f87171">health_check ⚠</text>
+    </svg>
+    <title>P08 SRE Agent Architecture</title>
+    <defs>
+      <marker id="arr8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="0" y="0" width="700" height="620" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="588" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- ROW 1: SRE Query -->
+    <rect x="240" y="36" width="200" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="54" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">SRE Query</text>
+    <text x="340" y="70" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">via Gradio UI</text>
+    <line x1="340" y1="80" x2="340" y2="104" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+    <!-- ROW 2: SREAgent ReAct Loop -->
+    <rect x="140" y="112" width="400" height="56" rx="6" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="340" y="132" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#f87171">SREAgent — ReAct Loop</text>
+    <text x="340" y="150" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#ef4444">Reason → Act → Observe · max 5 steps</text>
+    <line x1="340" y1="168" x2="340" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+    <!-- ROW 3: LLM -->
+    <rect x="140" y="200" width="400" height="56" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="340" y="220" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#a78bfa">Qwen2.5-0.5B · local inference</text>
+    <text x="340" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">decides: TOOL + ARGS  or  ANSWER</text>
+
+    <!-- Branch line -->
+    <line x1="340" y1="256" x2="340" y2="268" stroke="#334155" stroke-width="1.5"/>
+    <line x1="160" y1="268" x2="540" y2="268" stroke="#334155" stroke-width="1.5"/>
+    <line x1="160" y1="268" x2="160" y2="292" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <line x1="540" y1="268" x2="540" y2="292" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <text x="260" y="264" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#475569">tool call</text>
+    <text x="440" y="264" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#475569">final answer</text>
+
+    <!-- ROW 4 LEFT: requires_approval check -->
+    <rect x="50" y="292" width="220" height="52" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="160" y="312" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#94a3b8">requires_approval?</text>
+    <text x="160" y="330" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">check tool registry flag</text>
+
+    <!-- ROW 4 RIGHT: Final Answer -->
+    <rect x="400" y="292" width="240" height="52" rx="6" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="520" y="312" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#60a5fa">Final Answer</text>
+    <text x="520" y="330" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">ANSWER: ... returned to user</text>
+
+    <!-- From requires_approval: YES left, NO right -->
+    <line x1="50" y1="318" x2="36" y2="318" stroke="#334155" stroke-width="1.5"/>
+    <line x1="36" y1="318" x2="36" y2="386" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <text x="28" y="355" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#ef4444" transform="rotate(-90,28,355)">YES</text>
+
+    <line x1="160" y1="344" x2="160" y2="386" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+    <text x="172" y="366" font-family="Inter,sans-serif" font-size="10" fill="#64748b">NO</text>
+
+    <!-- ROW 5 LEFT: Pause box -->
+    <rect x="36" y="386" width="116" height="52" rx="6" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="94" y="406" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f87171">⚠ Pause</text>
+    <text x="94" y="424" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#ef4444">human approves</text>
+
+    <!-- Arrow from pause back to execute (approve path) -->
+    <line x1="152" y1="412" x2="200" y2="412" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 2" marker-end="url(#arr8)"/>
+    <text x="176" y="406" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#475569">approve</text>
+
+    <!-- ROW 5 MIDDLE: Execute tool -->
+    <rect x="100" y="386" width="220" height="52" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="210" y="406" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">Execute tool</text>
+    <text x="210" y="424" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">returns ToolResult + latency_ms</text>
+    <line x1="210" y1="438" x2="210" y2="462" stroke="#334155" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+    <!-- Result loops back to LLM -->
+    <path d="M320 490 L350 490 L350 228 L540 228" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arr8)"/>
+    <text x="350" y="366" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#334155" transform="rotate(90,350,366)">observe → reason again</text>
+
+    <!-- ROW 6: ToolResult observation -->
+    <rect x="100" y="462" width="220" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="210" y="480" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#94a3b8">Observation added to state</text>
+    <text x="210" y="496" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">step trace updated</text>
+
+    <!-- ROW 7: Tool registry -->
+    <text x="340" y="530" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.08em">TOOL REGISTRY</text>
+    <rect x="28"  y="542" width="108" height="32" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="82"  y="558" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">check_slo</text>
+    <rect x="144" y="542" width="108" height="32" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="198" y="558" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">get_runbook</text>
+    <rect x="260" y="542" width="108" height="32" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="314" y="558" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">query_alerts</text>
+    <rect x="376" y="542" width="108" height="32" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="430" y="558" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">error_budget</text>
+    <rect x="492" y="542" width="120" height="32" rx="4" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="552" y="558" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#f87171">health_check ⚠</text>
+    </svg>
+  </div>
+</div>
+
+<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">SRE Additions</div>
+    <div class="features">
+      <div class="feature"><strong>Human-in-the-loop</strong> — external HTTP calls require explicit approval before executing</div>
+      <div class="feature"><strong>Full step trace</strong> — every thought, tool call, result, and approval visible in UI</div>
+      <div class="feature"><strong>Latency tracking</strong> — every ToolResult includes latency_ms for observability</div>
+      <div class="feature"><strong>Max steps guard</strong> — hard limit of 5 steps prevents infinite loops</div>
+      <div class="feature"><strong>Graceful tool errors</strong> — unknown tools and bad args return ToolResult errors, not crashes</div>
+      <div class="feature"><strong>Real runbook lookup</strong> — get_runbook reads actual runbooks.jsonl file, not hardcoded</div>
+      <div class="feature"><strong>Burn rate logic</strong> — CRITICAL/WARNING/ELEVATED/OK mapped from real SRE thresholds</div>
+      <div class="feature"><strong>State preservation</strong> — agent state survives approval pause, resumes from exact step</div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why human-in-the-loop for only check_service_health?</div>
+        <div class="decision-a">The four read-only tools (SLO status, runbook lookup, alerts, error budget math) carry zero risk — they either read local files or compute math. check_service_health makes real external HTTP calls: it could hit internal endpoints, trigger rate limits, or expose which URLs the agent is checking. Requiring approval for external calls follows the principle of least privilege — the agent only gets network access when a human explicitly grants it.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why Qwen2.5-0.5B instead of a larger model or API?</div>
+        <div class="decision-a">0.5B parameters fits in CPU memory on the HF Space free tier (16GB RAM). An API like Mistral or GPT-4 would give better tool-use accuracy but introduces latency, cost, and an external dependency. For a portfolio demo the goal is showing the agent architecture — the ReAct loop, tool registry, approval system, and state management work regardless of model quality. Larger models are a drop-in replacement.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why parse structured TOOL/ARGS format instead of function calling?</div>
+        <div class="decision-a">Qwen2.5-0.5B doesn't reliably support JSON function calling — it's too small. The TOOL/ARGS text format with regex parsing is more robust for small models. The system prompt shows the exact format with an example, and the parser strips markdown fences and finds the JSON block. This approach works on any model, including ones that don't support the OpenAI function calling spec.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why a ToolResult dataclass instead of raw dicts?</div>
+        <div class="decision-a">ToolResult enforces a consistent interface — every tool returns the same fields (tool, success, data, error, latency_ms) regardless of what it does internally. This makes the agent loop simple: it never needs to know which tool it called to display the result correctly. The trace renderer treats all ToolResult objects identically, and testing is straightforward — mock any tool by returning a ToolResult.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item red">ReAct Pattern</span>
+      <span class="stack-item red">Human-in-the-loop</span>
+      <span class="stack-item">Qwen2.5-0.5B</span>
+      <span class="stack-item">HuggingFace Transformers</span>
+      <span class="stack-item">Gradio</span>
+      <span class="stack-item">httpx</span>
+      <span class="stack-item">pytest</span>
+      <span class="stack-item sre">Tool registry pattern</span>
+      <span class="stack-item sre">Latency tracking</span>
+      <span class="stack-item sre">Approval gate</span>
+      <span class="stack-item sre">State preservation</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div class="paused-box">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p08-sre-agent" target="_blank">the Space</a>
+      and click <em>Restart this Space</em> (takes ~60 seconds — model loading).
+    </div>
+    <p class="prose" style="margin-bottom:16px">Good queries to try:</p>
+    <div class="code-block"><pre><span class="cmt"># Try these queries in the Gradio UI:</span>
+<span class="str">"What is the SLO status of auth-service?"</span>
+<span class="str">"Show me all critical alerts"</span>
+<span class="str">"Get the runbook for HighErrorRate"</span>
+<span class="str">"Calculate error budget for 99.9% SLO over 30 days"</span>
+<span class="str">"Check health of https://huggingface.co"</span>  <span class="cmt"># triggers approval</span>
+
+<span class="cmt"># Run locally</span>
+git clone https://github.com/amarshiv86/p08-sre-agent
+cd p08-sre-agent
+pip install -r requirements.txt
+python hf_space/app.py
+
+<span class="cmt"># Run tests (no GPU/model needed)</span>
+pytest tests/ -v</pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p08-sre-agent" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p08-sre-agent" target="_blank">HF Space</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

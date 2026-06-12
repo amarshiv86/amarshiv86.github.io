@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P10 · LLM Observability Dashboard — eval scores, SLO burn rates, latency, cost tracking, prompt versioning by Amar Singh">
+<title>P10 · LLM Observability Dashboard · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --amber:#b45309; --amber-l:#fef3c7; --amber-m:#fde68a;
+  --blue:#1d4ed8; --blue-l:#eff6ff; --blue-m:#bfdbfe;
+  --purple:#6d28d9; --purple-l:#f5f3ff; --purple-m:#ddd6fe;
+  --red:#b91c1c; --red-l:#fef2f2; --red-m:#fecaca;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.amber{color:var(--amber)}
+.meta-value.green{color:var(--green)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+/* Dashboard panels grid */
+.panels-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0}
+@media(max-width:580px){.panels-grid{grid-template-columns:1fr}}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+.panel.green{border-left:3px solid var(--green)}
+.panel.amber{border-left:3px solid var(--amber)}
+.panel.blue{border-left:3px solid var(--blue)}
+.panel.purple{border-left:3px solid var(--purple)}
+.panel.red{border-left:3px solid var(--red)}
+.panel-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.panel-desc{font-size:13px;color:var(--muted);line-height:1.6}
+.panel-desc strong{color:var(--text);font-weight:500}
+/* Data sources */
+.source-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+@media(max-width:560px){.source-grid{grid-template-columns:1fr}}
+.source-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:start;gap:12px}
+.source-badge{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;white-space:nowrap;margin-top:2px}
+.source-badge.real{background:var(--green-l);color:var(--green);border:1px solid var(--green-m)}
+.source-badge.mock{background:var(--bg3);color:var(--muted);border:1px solid var(--border)}
+.source-content{}
+.source-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.source-detail{font-size:12px;color:var(--muted);line-height:1.5}
+/* Alert severity table */
+.alert-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.alert-table th{text-align:left;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.alert-table td{padding:10px 14px;border:1px solid var(--border);color:var(--muted);vertical-align:top}
+.alert-table td:first-child{font-weight:600}
+.sev-critical{color:var(--red);font-weight:600}
+.sev-warning{color:var(--amber);font-weight:600}
+.sev-info{color:var(--blue);font-weight:600}
+/* Steps */
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--amber)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.amber{background:var(--amber-l);border-color:var(--amber-m);color:var(--amber)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+.code-block .kw{color:#7dd3fc}
+.paused-box{background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309}
+.paused-box a{color:#b45309;font-weight:600}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px;flex-wrap:wrap}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p10-observability" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P10 · Observability <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">LLM Observability Dashboard</h1>
+    <p class="proj-subtitle">
+      Unified observability dashboard for AI systems — eval scores from P09's
+      real SQLite database, SLO burn rates, latency p50/p95/p99, LLM cost
+      tracking by model, prompt version history, and anomaly-based alerting.
+      Everything an SRE needs to monitor an AI system in production.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Panels</div><div class="meta-value amber">6 dashboard panels</div></div>
+      <div class="meta-item"><div class="meta-label">Real data</div><div class="meta-value green">P09 eval SQLite DB</div></div>
+      <div class="meta-item"><div class="meta-label">Alert types</div><div class="meta-value">SLO · latency · cost · eval</div></div>
+      <div class="meta-item"><div class="meta-label">Services</div><div class="meta-value">4 SLO + 3 latency</div></div>
+      <div class="meta-item"><div class="meta-label">UI</div><div class="meta-value">Gradio 5</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- What it monitors -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">6 Dashboard Panels</div>
+    <p class="prose" style="margin-bottom:20px">
+      Each panel maps to a real SRE concern for AI systems. Together they give
+      a complete picture of system health, cost, and quality:
+    </p>
+    <div class="panels-grid">
+      <div class="panel green">
+        <div class="panel-title">Eval Score Trend</div>
+        <div class="panel-desc">
+          <strong>Real data from P09 SQLite.</strong> Shows avg composite score and pass rate
+          over the last 15 runs. Regression visible as a drop in the trend line.
+        </div>
+      </div>
+      <div class="panel red">
+        <div class="panel-title">SLO Burn Rates</div>
+        <div class="panel-desc">
+          4 services monitored — api-gateway, payment-service, auth-service,
+          notification-service. <strong>CRITICAL/WARNING/ELEVATED/OK</strong>
+          status with burn rate and budget remaining %.
+        </div>
+      </div>
+      <div class="panel blue">
+        <div class="panel-title">Latency p50/p95/p99</div>
+        <div class="panel-desc">
+          3 AI services tracked — p06-code-review, p08-sre-agent, p09-eval.
+          <strong>p99 vs SLO threshold</strong> with trend direction
+          (stable / improving / degrading).
+        </div>
+      </div>
+      <div class="panel amber">
+        <div class="panel-title">LLM Cost Tracking</div>
+        <div class="panel-desc">
+          Daily cost breakdown by model — qwen2.5-0.5b, phi-3-mini, mistral-7b.
+          7-day trend with <strong>cost spike detection</strong> (alerts if today
+          is 50%+ above yesterday).
+        </div>
+      </div>
+      <div class="panel purple">
+        <div class="panel-title">Prompt Version History</div>
+        <div class="panel-desc">
+          6 prompt versions tracked across p06, p08, p09 — each with avg score,
+          request count, and description. Shows <strong>how prompt changes
+          affect quality over time</strong>.
+        </div>
+      </div>
+      <div class="panel red">
+        <div class="panel-title">Anomaly Alerts</div>
+        <div class="panel-desc">
+          4 alert detectors run on each refresh: SLO burn, latency breach,
+          cost spike, eval regression. Sorted <strong>critical → warning → info</strong>
+          with actionable recommendations.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data sources -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Data Sources</div>
+    <p class="prose" style="margin-bottom:20px">
+      P10 mixes one real data source with realistic mock data. The architecture
+      is designed so any mock can be swapped for a real Prometheus/PagerDuty
+      integration without changing the dashboard code:
+    </p>
+    <div class="source-grid">
+      <div class="source-card">
+        <div class="source-badge real">REAL</div>
+        <div class="source-content">
+          <div class="source-name">P09 eval_history.db</div>
+          <div class="source-detail">SQLite file from P09 copied to data/processed/. Dashboard reads actual eval runs, scores, and pass rates via direct SQL query.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">SLO burn rates</div>
+          <div class="source-detail">Same mock Prometheus data pattern as P08. 4 services with realistic error rates — auth-service intentionally CRITICAL.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">Latency p50/p95/p99</div>
+          <div class="source-detail">Realistic latency distributions for 3 AI services with ±15% random jitter on each refresh to simulate live data.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">LLM cost tracker</div>
+          <div class="source-detail">Per-model cost calculation based on realistic token counts and pricing. 7-day history with daily breakdown.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">Prompt version store</div>
+          <div class="source-detail">6 real prompt versions with actual descriptions matching P06, P08, P09 prompt evolution over the portfolio build.</div>
+        </div>
+      </div>
+      <div class="source-card">
+        <div class="source-badge mock">MOCK</div>
+        <div class="source-content">
+          <div class="source-name">Alert feed</div>
+          <div class="source-detail">4 realistic alerts — 1 critical (auth-service SLO), 2 warnings, 1 info (cert expiry). Mirrors real PagerDuty structure.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Anomaly detection -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Anomaly Detection</div>
+    <p class="prose" style="margin-bottom:20px">
+      Four independent detectors run on every dashboard refresh.
+      Each returns structured <code>Alert</code> objects with service, message,
+      value, threshold, and an actionable recommendation:
+    </p>
+    <table class="alert-table">
+      <thead>
+        <tr><th>Detector</th><th>Trigger condition</th><th>Severity</th><th>Recommendation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SLO burn rate</td>
+          <td>burn_rate &gt; 14.4x</td>
+          <td class="sev-critical">CRITICAL</td>
+          <td style="font-size:12px">Page on-call immediately. Check recent deploys.</td>
+        </tr>
+        <tr>
+          <td>SLO burn rate</td>
+          <td>burn_rate &gt; 6x</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Investigate error rate. Review slow query logs.</td>
+        </tr>
+        <tr>
+          <td>Latency</td>
+          <td>p99 &gt; 100% of SLO</td>
+          <td class="sev-critical">CRITICAL</td>
+          <td style="font-size:12px">Check for slow queries or resource saturation.</td>
+        </tr>
+        <tr>
+          <td>Latency</td>
+          <td>p99 &gt; 90% of SLO</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Monitor closely — approaching SLO breach.</td>
+        </tr>
+        <tr>
+          <td>Cost spike</td>
+          <td>Today &gt; yesterday × 1.5</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Check for unusual traffic or prompt loops.</td>
+        </tr>
+        <tr>
+          <td>Eval regression</td>
+          <td>Score drop &gt; 10%</td>
+          <td class="sev-critical">CRITICAL</td>
+          <td style="font-size:12px">Block deployment. Review prompt changes.</td>
+        </tr>
+        <tr>
+          <td>Eval regression</td>
+          <td>Score drop &gt; 5%</td>
+          <td class="sev-warning">WARNING</td>
+          <td style="font-size:12px">Investigate prompt changes. Run extended suite.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Architecture -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 480" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P10 LLM Observability Dashboard Architecture</title>
+    <defs>
+      <marker id="arr10" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="0" y="0" width="700" height="480" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="448" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- Data sources row -->
+    <text x="340" y="38" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.08em">DATA SOURCES</text>
+
+    <!-- P09 SQLite (real) -->
+    <rect x="28" y="50" width="130" height="44" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="93" y="68" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#34d399">P09 SQLite</text>
+    <text x="93" y="84" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#6ee7b7">REAL data</text>
+
+    <!-- Mock Prometheus -->
+    <rect x="168" y="50" width="130" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="233" y="68" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#94a3b8">Mock Prometheus</text>
+    <text x="233" y="84" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#64748b">SLO · latency</text>
+
+    <!-- Mock Cost -->
+    <rect x="308" y="50" width="130" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="373" y="68" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#94a3b8">Mock Cost DB</text>
+    <text x="373" y="84" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#64748b">per-model costs</text>
+
+    <!-- Mock PagerDuty -->
+    <rect x="448" y="50" width="130" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="513" y="68" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#94a3b8">Mock PagerDuty</text>
+    <text x="513" y="84" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#64748b">alert feed</text>
+
+    <!-- Arrows down to collector -->
+    <line x1="93"  y1="94" x2="93"  y2="126" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+    <line x1="233" y1="94" x2="233" y2="126" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+    <line x1="373" y1="94" x2="373" y2="126" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+    <line x1="513" y1="94" x2="513" y2="126" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+
+    <!-- Collector -->
+    <rect x="80" y="134" width="480" height="52" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="320" y="154" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#f59e0b">collector.py — get_dashboard_data()</text>
+    <text x="320" y="172" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">single call · assembles all panels · real + mock sources</text>
+    <line x1="320" y1="186" x2="200" y2="210" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+    <line x1="320" y1="186" x2="440" y2="210" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+
+    <!-- Anomaly detection -->
+    <rect x="60" y="218" width="260" height="52" rx="6" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="190" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f87171">alerts.py — detect_all_anomalies()</text>
+    <text x="190" y="256" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#ef4444">SLO · latency · cost · eval detectors</text>
+
+    <!-- Gradio dashboard -->
+    <rect x="340" y="218" width="260" height="52" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="470" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#a78bfa">Gradio Dashboard UI</text>
+    <text x="470" y="256" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">6 panels · auto-refresh</text>
+
+    <!-- Merge arrows to 6 panels -->
+    <line x1="190" y1="270" x2="190" y2="294" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+    <line x1="470" y1="270" x2="470" y2="294" stroke="#334155" stroke-width="1.5" marker-end="url(#arr10)"/>
+
+    <!-- 6 output panels -->
+    <text x="340" y="310" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.08em">DASHBOARD PANELS</text>
+
+    <rect x="28"  y="320" width="96" height="36" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="76"  y="338" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#34d399">Eval Scores</text>
+
+    <rect x="132" y="320" width="96" height="36" rx="4" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="180" y="338" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#f87171">SLO Burn</text>
+
+    <rect x="236" y="320" width="96" height="36" rx="4" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="284" y="338" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#60a5fa">Latency</text>
+
+    <rect x="340" y="320" width="96" height="36" rx="4" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="388" y="338" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#f59e0b">Costs</text>
+
+    <rect x="444" y="320" width="96" height="36" rx="4" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="492" y="338" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#a78bfa">Prompts</text>
+
+    <rect x="548" y="320" width="104" height="36" rx="4" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="600" y="338" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="10" fill="#f87171">Alerts ⚠</text>
+
+    <!-- P10 reads from P09 label -->
+    <rect x="100" y="410" width="460" height="36" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="330" y="428" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">eval_history.db copied from P09 → real score data in P10</text>
+    </svg>
+  </div>
+</div>
+
+<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">SRE Additions</div>
+    <div class="features">
+      <div class="feature"><strong>Real P09 eval data</strong> — reads actual SQLite DB, not synthetic scores</div>
+      <div class="feature"><strong>4 anomaly detectors</strong> — SLO, latency, cost, eval regression run every refresh</div>
+      <div class="feature"><strong>Structured Alert dataclass</strong> — every alert has severity, service, value, threshold, recommendation</div>
+      <div class="feature"><strong>Sorted alerts</strong> — critical → warning → info, never buried</div>
+      <div class="feature"><strong>p50/p95/p99 latency</strong> — tail latency tracked, not just averages</div>
+      <div class="feature"><strong>Prompt version history</strong> — shows quality impact of every prompt change</div>
+      <div class="feature"><strong>Per-model cost breakdown</strong> — know which model is driving costs</div>
+      <div class="feature"><strong>Mock → real swap-ready</strong> — collector functions return same schema as real Prometheus/PD would</div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why use real P09 data instead of all-mock?</div>
+        <div class="decision-a">A dashboard with 100% synthetic data doesn't prove anything — it's a UI demo. Using the actual P09 eval_history.db means the eval scores panel shows real run history, real score trends, and real pass rates. When a recruiter or interviewer looks at the dashboard they're seeing genuine data from a real eval run, not hardcoded numbers that always look good.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why a single get_dashboard_data() call instead of per-panel fetches?</div>
+        <div class="decision-a">Per-panel fetches would hit the SQLite DB and run anomaly detection 6 separate times per refresh — wasteful and potentially inconsistent (panel 1 and panel 6 would show data from different moments). A single collector call snapshots all data atomically, then each panel renders from the same snapshot. This is how production dashboards work — one scrape, multiple views.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why track prompt versions in the observability dashboard?</div>
+        <div class="decision-a">Prompt changes are deployments — they change model behavior as much as code changes do. Tracking prompt version history alongside eval scores lets you correlate "eval score dropped on this date" with "prompt v1.0 was deployed on this date". Without prompt versioning, debugging quality regressions in AI systems is guesswork. This is a gap in most AI monitoring tools.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item amber">Gradio 5</span>
+      <span class="stack-item amber">SQLite</span>
+      <span class="stack-item">Python dataclasses</span>
+      <span class="stack-item">Mock Prometheus</span>
+      <span class="stack-item">Mock PagerDuty</span>
+      <span class="stack-item sre">Anomaly detection</span>
+      <span class="stack-item sre">p50/p95/p99 tracking</span>
+      <span class="stack-item sre">Prompt versioning</span>
+      <span class="stack-item sre">Real P09 eval data</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div class="paused-box">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p10-observability" target="_blank">the Space</a>
+      and click <em>Restart this Space</em> (takes ~30 seconds).
+    </div>
+    <div class="code-block"><pre><span class="cmt"># Run locally</span>
+git clone https://github.com/amarshiv86/p10-observability
+cd p10-observability
+pip install -r requirements.txt
+
+<span class="cmt"># Copy real P09 eval DB for real data</span>
+cp ../p09-llm-eval/data/processed/eval_history.db \
+   data/processed/eval_history.db
+
+python hf_space/app.py
+<span class="cmt"># → Open http://localhost:7860</span>
+<span class="cmt"># → All 6 panels load with real + mock data</span>
+<span class="cmt"># → Refresh button re-runs anomaly detection</span></pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p10-observability" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p10-observability" target="_blank">HF Space</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

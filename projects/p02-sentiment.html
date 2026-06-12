@@ -106,7 +106,7 @@ footer{padding:32px 0;text-align:center}
 <div class="wrap">
   <div class="proj-header">
     <div class="proj-eyebrow">P02 · MLOps <span class="proj-badge">Paused</span></div>
-    <h1 class="proj-title">Sentiment +<br>Drift Detection</h1>
+    <h1 class="proj-title">Sentiment + Drift Detection</h1>
     <p class="proj-subtitle">
       Fine-tuned DistilBERT on IMDB movie reviews with full MLOps pipeline —
       automated retraining, experiment tracking, and production drift detection
@@ -141,23 +141,6 @@ footer{padding:32px 0;text-align:center}
       stronger than P01's classifier because <strong>transformer attention mechanisms
       capture long-range dependencies in text</strong> that simple feature engineering cannot.
     </p>
-  </div>
-</div>
-
-<!-- How it works -->
-<div class="wrap">
-  <div class="section">
-    <div class="section-title">How it works</div>
-    <p class="prose">Four stages run automatically on every push — training, evaluation,
-    drift detection, and deployment are all decoupled:</p>
-    <ul class="steps" style="margin-top:24px">
-      <li><div class="step-num">1</div><div class="step-content"><strong>prepare.py</strong> — downloads IMDB from HF Hub, strips HTML tags from reviews, subsamples for fast iteration (configurable via params.yaml), saves to train/test CSV</div></li>
-      <li><div class="step-num">2</div><div class="step-content"><strong>train.py</strong> — fine-tunes distilbert-base-uncased using HuggingFace Trainer API, logs all params and metrics to MLflow, saves best checkpoint by F1 score</div></li>
-      <li><div class="step-num">3</div><div class="step-content"><strong>evaluate.py</strong> — runs full evaluation on held-out test set, generates confusion matrix PNG, writes metrics.json with accuracy/F1/ROC-AUC/precision/recall</div></li>
-      <li><div class="step-num">4</div><div class="step-content"><strong>drift_report.py</strong> — runs model inference on both train and test samples, compares distributions across 6 columns using Evidently AI, saves HTML drift report</div></li>
-      <li><div class="step-num">5</div><div class="step-content"><strong>hf_upload.py</strong> — pushes model weights + tokenizer to HF Hub model registry, pushes processed dataset to HF Hub dataset registry</div></li>
-      <li><div class="step-num">6</div><div class="step-content"><strong>FastAPI app</strong> — downloads model from HF Hub at startup, serves HTML form + /predict/json + /health endpoints</div></li>
-    </ul>
   </div>
 </div>
 
@@ -245,6 +228,23 @@ footer{padding:32px 0;text-align:center}
       training and test samples and uses Evidently AI to compare their distributions.
       The report is saved as an HTML artifact and pushed to HF Hub alongside the model.
     </p>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <p class="prose">Four stages run automatically on every push — training, evaluation,
+    drift detection, and deployment are all decoupled:</p>
+    <ul class="steps" style="margin-top:24px">
+      <li><div class="step-num">1</div><div class="step-content"><strong>prepare.py</strong> — downloads IMDB from HF Hub, strips HTML tags from reviews, subsamples for fast iteration (configurable via params.yaml), saves to train/test CSV</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>train.py</strong> — fine-tunes distilbert-base-uncased using HuggingFace Trainer API, logs all params and metrics to MLflow, saves best checkpoint by F1 score</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>evaluate.py</strong> — runs full evaluation on held-out test set, generates confusion matrix PNG, writes metrics.json with accuracy/F1/ROC-AUC/precision/recall</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>drift_report.py</strong> — runs model inference on both train and test samples, compares distributions across 6 columns using Evidently AI, saves HTML drift report</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>hf_upload.py</strong> — pushes model weights + tokenizer to HF Hub model registry, pushes processed dataset to HF Hub dataset registry</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>FastAPI app</strong> — downloads model from HF Hub at startup, serves HTML form + /predict/json + /health endpoints</div></li>
+    </ul>
   </div>
 </div>
 

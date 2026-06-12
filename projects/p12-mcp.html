@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P12 · SRE Ops MCP Server — Custom MCP server exposing 6 SRE tools via JSON-RPC 2.0, works with Claude Desktop by Amar Singh">
+<title>P12 · SRE Ops MCP Server · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --purple:#6d28d9; --purple-l:#f5f3ff; --purple-m:#ddd6fe;
+  --amber:#b45309; --amber-l:#fef3c7; --amber-m:#fde68a;
+  --blue:#1d4ed8; --blue-l:#eff6ff; --blue-m:#bfdbfe;
+  --red:#b91c1c; --red-l:#fef2f2; --red-m:#fecaca;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.nav-links a.live{background:var(--green);color:#fff;border-color:var(--green)}
+.nav-links a.live:hover{opacity:.85}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--green-l);color:var(--green);border:1px solid var(--green-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.purple{color:var(--purple)}
+.meta-value.green{color:var(--green)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+/* MCP flow boxes */
+.mcp-flow{display:flex;align-items:center;gap:0;margin:24px 0;flex-wrap:wrap;justify-content:center}
+.mcp-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 18px;text-align:center;font-size:13px;font-weight:600;color:var(--text)}
+.mcp-box.claude{background:var(--purple-l);border-color:var(--purple-m);color:var(--purple)}
+.mcp-box.protocol{background:var(--bg3);border-color:var(--border);color:var(--muted);font-size:11px;font-family:var(--mono)}
+.mcp-box.server{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.mcp-box.tools{background:var(--amber-l);border-color:var(--amber-m);color:var(--amber)}
+.mcp-arrow{font-size:18px;color:var(--light);padding:0 10px}
+/* Tools grid */
+.tools-grid{display:flex;flex-direction:column;gap:10px;margin:20px 0}
+.tool-row{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:grid;grid-template-columns:180px 1fr auto;gap:16px;align-items:start}
+@media(max-width:600px){.tool-row{grid-template-columns:1fr}}
+.tool-name{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--purple)}
+.tool-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.tool-desc strong{color:var(--text);font-weight:500}
+.tool-args{font-family:var(--mono);font-size:10px;color:var(--light);white-space:nowrap}
+/* JSON-RPC trace */
+.rpc-box{background:#0d1117;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.rpc-box pre{font-family:var(--mono);font-size:12px;color:#c9d1d9;line-height:1.9}
+.rpc-box .key{color:#79c0ff}
+.rpc-box .val{color:#a5d6ff}
+.rpc-box .str{color:#86efac}
+.rpc-box .num{color:#f97316}
+.rpc-box .cmt{color:#8b949e}
+/* Audit log */
+.audit-box{background:#0d1117;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.audit-box pre{font-family:var(--mono);font-size:12px;color:#c9d1d9;line-height:1.9}
+.audit-box .ts{color:#8b949e}
+.audit-box .tool{color:#79c0ff}
+.audit-box .ok{color:#56d364}
+.audit-box .ms{color:#f97316}
+/* Steps */
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--purple)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.purple{background:var(--purple-l);border-color:var(--purple-m);color:var(--purple)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+.code-block .kw{color:#7dd3fc}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px;flex-wrap:wrap}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p12-sre-mcp" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p12-sre-mcp" target="_blank" class="live">Live Demo ↗</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P12 · MCP · Capstone <span class="proj-badge">Live ✓</span></div>
+    <h1 class="proj-title">SRE Ops MCP Server</h1>
+    <p class="proj-subtitle">
+      Custom MCP (Model Context Protocol) server exposing 6 SRE tools as
+      LLM-callable actions via JSON-RPC 2.0. Works with Claude Desktop via
+      stdio transport — ask Claude "What's burning right now?" and it calls
+      your real SRE tools automatically. Every call audit logged.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Protocol</div><div class="meta-value purple">MCP · JSON-RPC 2.0</div></div>
+      <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-value green">6 SRE tools</div></div>
+      <div class="meta-item"><div class="meta-label">Transport</div><div class="meta-value">stdio + HTTP</div></div>
+      <div class="meta-item"><div class="meta-label">Audit log</div><div class="meta-value green">Every call logged</div></div>
+      <div class="meta-item"><div class="meta-label">Compatible</div><div class="meta-value">Claude Desktop</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- What MCP is -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">What is MCP?</div>
+    <p class="prose">
+      MCP (Model Context Protocol) is an open standard by Anthropic for connecting
+      LLMs to external tools and data sources. Instead of hardcoding tool calls
+      into your LLM app, MCP lets you build a <strong>standalone server</strong>
+      that any MCP-compatible client (Claude Desktop, Claude Code, custom apps)
+      can connect to and use.
+    </p>
+    <div class="mcp-flow" style="margin:28px 0">
+      <div class="mcp-box claude">Claude Desktop<br><small style="font-weight:400;font-size:11px">MCP client</small></div>
+      <div class="mcp-arrow">↔</div>
+      <div class="mcp-box protocol">JSON-RPC 2.0<br>stdio transport</div>
+      <div class="mcp-arrow">↔</div>
+      <div class="mcp-box server">SRE MCP Server<br><small style="font-weight:400;font-size:11px">this project</small></div>
+      <div class="mcp-arrow">↔</div>
+      <div class="mcp-box tools">6 SRE Tools<br><small style="font-weight:400;font-size:11px">SLO · alerts · incidents</small></div>
+    </div>
+    <p class="prose">
+      The key insight: <strong>the LLM decides which tools to call</strong> based on
+      the user's question. Ask "What's burning right now?" and Claude calls
+      <code>query_alerts</code> then <code>get_slo_status</code> automatically —
+      you don't write that logic, the model figures it out.
+    </p>
+  </div>
+</div>
+
+<!-- 6 Tools -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">6 SRE Tools</div>
+    <p class="prose" style="margin-bottom:20px">
+      Each tool is registered with a name, description, and JSON Schema for
+      argument validation. The MCP server advertises them via <code>tools/list</code>
+      so any client knows what's available:
+    </p>
+    <div class="tools-grid">
+      <div class="tool-row">
+        <div class="tool-name">get_slo_status</div>
+        <div class="tool-desc">SLO burn rate and error budget for a service. Returns status CRITICAL/WARNING/ELEVATED/OK with burn rate, budget remaining %, and recommended action.</div>
+        <div class="tool-args">service_name: str</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">get_runbook</div>
+        <div class="tool-desc">Fetch runbook steps for an alert. Fuzzy match on alert name — "HighErrorRate" or "high error rate" both work. Returns immediate steps and escalation path.</div>
+        <div class="tool-args">alert_name: str</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">query_alerts</div>
+        <div class="tool-desc">Recent firing alerts filtered by severity. Returns total count and structured alert list with service, duration, and summary.</div>
+        <div class="tool-args">severity: all|critical|warning</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">create_incident</div>
+        <div class="tool-desc">Create a new incident record in the in-memory store. Generates INC-XXXXXX ID, sets status to "investigating", initializes timeline.</div>
+        <div class="tool-args">title, severity, service, description</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">get_incident_timeline</div>
+        <div class="tool-desc">Full timeline of events for an incident — alert fired, on-call paged, acknowledged, root cause found, resolution. Falls back to mock timeline for demo IDs.</div>
+        <div class="tool-args">incident_id: str</div>
+      </div>
+      <div class="tool-row">
+        <div class="tool-name">summarize_incident</div>
+        <div class="tool-desc"><strong>LLM-powered</strong> — Qwen2.5-0.5B generates a 3-sentence incident summary from the timeline. Covers what happened, root cause, and resolution. Heuristic fallback in CI.</div>
+        <div class="tool-args">incident_id: str</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Architecture -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 500" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P12 SRE MCP Server Architecture</title>
+    <defs>
+      <marker id="arr12" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="0" y="0" width="700" height="500" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="468" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+
+    <!-- Two transports label -->
+    <text x="175" y="36" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.08em">STDIO (Claude Desktop)</text>
+    <text x="525" y="36" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.08em">HTTP (HF Space demo)</text>
+    <line x1="350" y1="24" x2="350" y2="476" stroke="#1e3a4a" stroke-width="0" stroke-dasharray="4 4"/>
+
+    <!-- Claude Desktop -->
+    <rect x="40" y="52" width="270" height="44" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="175" y="70" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#a78bfa">Claude Desktop</text>
+    <text x="175" y="86" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">MCP client · claude_desktop_config.json</text>
+    <line x1="175" y1="96" x2="175" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#arr12)"/>
+
+    <!-- Gradio UI -->
+    <rect x="390" y="52" width="270" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="525" y="70" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">Gradio Demo UI</text>
+    <text x="525" y="86" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">scenario runner + manual tool call</text>
+    <line x1="525" y1="96" x2="525" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#arr12)"/>
+
+    <!-- MCP Server -->
+    <rect x="40" y="128" width="270" height="56" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="175" y="148" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">mcp_server.py</text>
+    <text x="175" y="166" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">JSON-RPC 2.0 · stdio transport</text>
+
+    <!-- HTTP handler -->
+    <rect x="390" y="128" width="270" height="56" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="525" y="148" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#34d399">HTTP handler (HF Space)</text>
+    <text x="525" y="166" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">same tool registry · different transport</text>
+
+    <!-- Both point to tool dispatch -->
+    <line x1="175" y1="184" x2="175" y2="208" stroke="#334155" stroke-width="1.5" marker-end="url(#arr12)"/>
+    <line x1="525" y1="184" x2="525" y2="208" stroke="#334155" stroke-width="1.5" marker-end="url(#arr12)"/>
+
+    <!-- Method dispatch -->
+    <rect x="80" y="216" width="500" height="44" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="330" y="234" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#f59e0b">Method dispatch: tools/list · tools/call</text>
+    <text x="330" y="250" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">routes to correct tool function by name</text>
+    <line x1="330" y1="260" x2="330" y2="284" stroke="#334155" stroke-width="1.5" marker-end="url(#arr12)"/>
+
+    <!-- Tool execution + audit -->
+    <rect x="80" y="292" width="500" height="56" rx="6" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="330" y="312" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#60a5fa">Tool execution + @timed_tool decorator</text>
+    <text x="330" y="330" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">executes function · records latency · calls audit()</text>
+    <line x1="330" y1="348" x2="330" y2="372" stroke="#334155" stroke-width="1.5" marker-end="url(#arr12)"/>
+
+    <!-- 6 tools row -->
+    <text x="330" y="388" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.08em">6 TOOL FUNCTIONS</text>
+    <rect x="28"  y="398" width="96" height="28" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="76"  y="412" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="9" fill="#34d399">get_slo_status</text>
+    <rect x="130" y="398" width="96" height="28" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="178" y="412" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="9" fill="#34d399">get_runbook</text>
+    <rect x="232" y="398" width="96" height="28" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="280" y="412" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="9" fill="#34d399">query_alerts</text>
+    <rect x="334" y="398" width="96" height="28" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="382" y="412" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="9" fill="#34d399">create_incident</text>
+    <rect x="436" y="398" width="96" height="28" rx="4" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="484" y="412" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="9" fill="#34d399">get_timeline</text>
+    <rect x="538" y="398" width="124" height="28" rx="4" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="600" y="412" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="9" fill="#a78bfa">summarize (LLM)</text>
+
+    <!-- Audit log -->
+    <rect x="150" y="448" width="360" height="28" rx="4" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="330" y="462" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" font-weight="600" fill="#94a3b8">AUDIT_LOG — every call: timestamp · tool · latency · success</text>
+    </svg>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>Client connects</strong> — Claude Desktop spawns the MCP server as a subprocess via stdio. The server reads JSON-RPC messages from stdin and writes responses to stdout.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>tools/list</strong> — client sends a tools/list request. Server responds with all 6 tool names, descriptions, and JSON Schema for arguments. Claude now knows what tools exist.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>User asks a question</strong> — "What's burning right now?" Claude decides to call <code>query_alerts</code> then <code>get_slo_status</code> for each critical service — automatically, no code needed.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>tools/call dispatched</strong> — server routes to the correct Python function by tool name. Arguments validated against JSON Schema before execution.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>@timed_tool decorator</strong> — wraps every tool function. Records start time, executes the function, measures latency, calls audit() with result. Tool author writes zero logging code.</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>JSON-RPC response</strong> — tool result returned as JSON-RPC 2.0 result object. Claude receives the data, synthesizes a natural language response to the user.</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- JSON-RPC protocol -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">JSON-RPC 2.0 Protocol</div>
+    <p class="prose" style="margin-bottom:16px">
+      MCP uses JSON-RPC 2.0 over stdio. Here's a real tool call exchange:
+    </p>
+    <div class="rpc-box"><pre><span class="cmt">→ Client sends tools/call request</span>
+{
+  <span class="key">"jsonrpc"</span>: <span class="str">"2.0"</span>,
+  <span class="key">"id"</span>: <span class="num">3</span>,
+  <span class="key">"method"</span>: <span class="str">"tools/call"</span>,
+  <span class="key">"params"</span>: {
+    <span class="key">"name"</span>: <span class="str">"get_slo_status"</span>,
+    <span class="key">"arguments"</span>: { <span class="key">"service_name"</span>: <span class="str">"auth-service"</span> }
+  }
+}
+
+<span class="cmt">← Server responds with tool result</span>
+{
+  <span class="key">"jsonrpc"</span>: <span class="str">"2.0"</span>,
+  <span class="key">"id"</span>: <span class="num">3</span>,
+  <span class="key">"result"</span>: {
+    <span class="key">"content"</span>: [{
+      <span class="key">"type"</span>: <span class="str">"text"</span>,
+      <span class="key">"text"</span>: <span class="str">"{\"service\": \"auth-service\", \"status\": \"WARNING\",
+               \"burn_rate\": 4.61, \"budget_remaining_pct\": 90.8,
+               \"action\": \"Investigate soon\"}"</span>
+    }]
+  }
+}
+
+<span class="cmt">← Claude synthesizes: "auth-service is WARNING with 4.6x burn rate.
+   You have 90.8% error budget remaining but should investigate soon."</span></pre></div>
+  </div>
+</div>
+
+<!-- Audit logging -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Audit Logging</div>
+    <p class="prose" style="margin-bottom:16px">
+      Every tool call is logged automatically via the <code>@timed_tool</code> decorator —
+      zero effort for tool authors. The audit log is postmortem-ready:
+    </p>
+    <div class="audit-box"><pre><span class="cmt">AUDIT_LOG — last 200 entries, in-memory</span>
+
+<span class="ts">2026-06-10T03:12:44Z</span>  <span class="tool">query_alerts</span>       <span class="ok">✓ success</span>  <span class="ms">2ms</span>   {severity: "critical"}
+<span class="ts">2026-06-10T03:12:45Z</span>  <span class="tool">get_slo_status</span>     <span class="ok">✓ success</span>  <span class="ms">1ms</span>   {service_name: "auth-service"}
+<span class="ts">2026-06-10T03:12:46Z</span>  <span class="tool">get_runbook</span>        <span class="ok">✓ success</span>  <span class="ms">1ms</span>   {alert_name: "HighErrorRate"}
+<span class="ts">2026-06-10T03:12:51Z</span>  <span class="tool">create_incident</span>    <span class="ok">✓ success</span>  <span class="ms">3ms</span>   {title: "auth-service high error rate", severity: "critical"}
+<span class="ts">2026-06-10T03:13:02Z</span>  <span class="tool">summarize_incident</span> <span class="ok">✓ success</span>  <span class="ms">33241ms</span>  {incident_id: "INC-A3F2C1"}</pre></div>
+    <p class="prose">
+      The audit trail answers the postmortem question: <strong>"exactly what did
+      the AI look at and in what order?"</strong> — something most AI tools
+      can't answer. Each entry has a UUID, ISO timestamp, tool name, arguments,
+      success flag, and latency.
+    </p>
+  </div>
+</div>
+
+<!-- Claude Desktop config -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Claude Desktop Integration</div>
+    <p class="prose" style="margin-bottom:16px">
+      Add this to <code>claude_desktop_config.json</code> and Claude Desktop
+      can call your SRE tools in any conversation:
+    </p>
+    <div class="code-block"><pre><span class="cmt">// ~/Library/Application Support/Claude/claude_desktop_config.json</span>
+{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"sre-ops"</span>: {
+      <span class="str">"command"</span>: <span class="str">"python"</span>,
+      <span class="str">"args"</span>: [<span class="str">"-m"</span>, <span class="str">"src.mcp_server"</span>],
+      <span class="str">"cwd"</span>: <span class="str">"/path/to/p12-sre-mcp"</span>
+    }
+  }
+}
+
+<span class="cmt">// Now ask Claude anything:</span>
+<span class="cmt">// "What services are burning right now?"</span>
+<span class="cmt">// "Show me the runbook for HighErrorRate"</span>
+<span class="cmt">// "Create an incident for auth-service"</span>
+<span class="cmt">// "Summarize incident INC-A3F2C1"</span></pre></div>
+  </div>
+</div>
+
+<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">SRE Additions</div>
+    <div class="features">
+      <div class="feature"><strong>@timed_tool decorator</strong> — automatic latency tracking + audit logging on every tool</div>
+      <div class="feature"><strong>Full audit log</strong> — 200-entry rolling log, postmortem-ready with UUID + timestamp</div>
+      <div class="feature"><strong>JSON Schema validation</strong> — tool arguments validated before execution, not after</div>
+      <div class="feature"><strong>Dual transport</strong> — same tool registry serves both stdio (Claude Desktop) and HTTP (demo)</div>
+      <div class="feature"><strong>LLM incident summary</strong> — Qwen2.5-0.5B generates 3-sentence summaries from timeline</div>
+      <div class="feature"><strong>Incident lifecycle</strong> — create → timeline → summarize mirrors real on-call workflow</div>
+      <div class="feature"><strong>Fuzzy runbook match</strong> — "high error rate" matches "HighErrorRate" runbook key</div>
+      <div class="feature"><strong>Heuristic fallback</strong> — summarize_incident works in CI without model loaded</div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why MCP instead of a custom tool-use API?</div>
+        <div class="decision-a">MCP is an open standard — any MCP client works without writing integration code. Claude Desktop, Claude Code, and custom apps built on Claude all support MCP natively. A custom API would require writing a new integration for every client. MCP gives you the integration for free once the server is built.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why @timed_tool decorator instead of logging inside each function?</div>
+        <div class="decision-a">A decorator separates the audit concern from the business logic. Each tool function does exactly one thing — answer the SRE question. The decorator handles timing and logging transparently. Adding a new tool automatically gets audit logging with zero extra code. This is the same pattern as middleware in web frameworks.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why JSON-RPC 2.0 instead of REST?</div>
+        <div class="decision-a">MCP uses JSON-RPC 2.0 because it maps naturally to the request/response pattern over stdio — each message has an id, method, and params. REST assumes HTTP verbs and URLs which don't translate to stdin/stdout. JSON-RPC also supports notifications (server-to-client messages without a request) which MCP uses for progress updates.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why include summarize_incident as an MCP tool instead of letting Claude summarize?</div>
+        <div class="decision-a">Exposing summarize_incident as a tool means the summary is generated server-side with the full timeline context, logged in the audit trail, and returnable as structured data. If Claude summarizes directly it's not logged, not reproducible, and not auditable. For incident management, every action taken — including AI summaries — should be in the audit log.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item purple">MCP Protocol</span>
+      <span class="stack-item purple">JSON-RPC 2.0</span>
+      <span class="stack-item purple">Claude Desktop</span>
+      <span class="stack-item">Qwen2.5-0.5B</span>
+      <span class="stack-item">Gradio 5</span>
+      <span class="stack-item">pytest</span>
+      <span class="stack-item sre">Audit logging</span>
+      <span class="stack-item sre">@timed_tool decorator</span>
+      <span class="stack-item sre">Incident lifecycle</span>
+      <span class="stack-item sre">GitHub Actions CI/CD</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <p class="prose" style="margin-bottom:16px">
+      The HF Space is <strong>always running</strong> — run preset scenarios or
+      call any tool manually:
+    </p>
+    <div class="code-block"><pre><span class="cmt"># Test via stdin (MCP stdio transport)</span>
+echo <span class="str">'{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'</span> \
+  | python -m src.mcp_server
+
+echo <span class="str">'{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"query_alerts","arguments":{"severity":"critical"}}}'</span> \
+  | python -m src.mcp_server
+
+<span class="cmt"># Run locally</span>
+git clone https://github.com/amarshiv86/p12-sre-mcp
+cd p12-sre-mcp
+pip install -r requirements.txt
+pytest tests/ -v
+
+<span class="cmt"># Connect to Claude Desktop</span>
+<span class="cmt"># Add to claude_desktop_config.json (see above)</span>
+<span class="cmt"># Ask: "What's burning right now?"</span></pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p12-sre-mcp" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p12-sre-mcp" target="_blank">Live Demo</a>
+      <a href="https://huggingface.co/datasets/amarshiv86/p12-sre-mcp-dataset" target="_blank">HF Dataset</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

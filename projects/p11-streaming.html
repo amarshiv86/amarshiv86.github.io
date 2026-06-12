@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="P11 · Streaming LLM API — token-by-token streaming with TTFT tracking, cancellation tokens, and rate limiting by Amar Singh">
+<title>P11 · Streaming LLM API · Amar Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg2:#f8f9fa; --bg3:#f1f3f5; --border:#e9ecef;
+  --text:#212529; --muted:#6c757d; --light:#adb5bd;
+  --green:#0d6e56; --green-l:#e6f4f0; --green-m:#c3e6dc;
+  --blue:#1d4ed8; --blue-l:#eff6ff; --blue-m:#bfdbfe;
+  --amber:#b45309; --amber-l:#fef3c7; --amber-m:#fde68a;
+  --purple:#6d28d9; --purple-l:#f5f3ff; --purple-m:#ddd6fe;
+  --sans:'Inter',sans-serif; --display:'Playfair Display',serif; --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7}
+.wrap{max-width:900px;margin:0 auto;padding:0 40px}
+@media(max-width:600px){.wrap{padding:0 20px}}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:100}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-back{font-size:13px;color:var(--muted);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-back:hover{color:var(--text)}
+.nav-links{display:flex;gap:10px}
+.nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 14px;border-radius:6px;border:1px solid var(--border);font-weight:500;transition:all .15s}
+.nav-links a:hover{border-color:var(--text);color:var(--text)}
+.proj-header{padding:56px 0 40px;border-bottom:1px solid var(--border)}
+.proj-eyebrow{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.proj-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-m)}
+.proj-title{font-family:var(--display);font-size:clamp(32px,5vw,52px);font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.1;margin-bottom:16px}
+.proj-subtitle{font-size:16px;color:var(--muted);margin-bottom:28px;max-width:620px;line-height:1.7}
+.proj-meta{display:flex;flex-wrap:wrap;gap:24px;padding:20px 0;border-top:1px solid var(--border)}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.meta-value{font-size:13px;color:var(--text);font-weight:500}
+.meta-value.blue{color:var(--blue)}
+.meta-value.green{color:var(--green)}
+.section{padding:48px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-title{font-family:var(--display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:20px;letter-spacing:-.01em}
+.prose{font-size:15px;color:var(--muted);line-height:1.8;max-width:720px}
+.prose+.prose{margin-top:14px}
+.prose strong{color:var(--text);font-weight:500}
+/* Metrics cards */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:24px 0}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.metric-num{font-family:var(--display);font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.metric-num.blue{color:var(--blue)}
+.metric-num.green{color:var(--green)}
+.metric-num.amber{color:var(--amber)}
+.metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+/* Feature cards */
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}
+@media(max-width:560px){.feature-grid{grid-template-columns:1fr}}
+.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+.feature-card.blue{border-top:3px solid var(--blue)}
+.feature-card.green{border-top:3px solid var(--green)}
+.feature-card.amber{border-top:3px solid var(--amber)}
+.feature-card.purple{border-top:3px solid var(--purple)}
+.feature-card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.feature-card-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.feature-card-desc strong{color:var(--text);font-weight:500}
+/* Steps */
+.steps{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px}
+.step-num{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-l);border-radius:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step-content{font-size:13px;color:var(--muted);line-height:1.6}
+.step-content strong{color:var(--text);font-weight:500}
+/* Stream trace */
+.stream-box{background:#0d1117;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.stream-box pre{font-family:var(--mono);font-size:12px;color:#c9d1d9;line-height:2}
+.stream-box .token{color:#79c0ff}
+.stream-box .metrics{color:#56d364}
+.stream-box .warn{color:#e3b341}
+.stream-box .cancel{color:#f85149}
+.stream-box .muted{color:#8b949e}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:560px){.features{grid-template-columns:1fr}}
+.feature{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);line-height:1.5}
+.feature::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px}
+.feature strong{color:var(--text);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.decision{padding:18px 20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--blue)}
+.decision-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.decision-a{font-size:13px;color:var(--muted);line-height:1.6}
+.stack-grid{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.stack-item{font-family:var(--mono);font-size:12px;padding:5px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.stack-item.blue{background:var(--blue-l);border-color:var(--blue-m);color:var(--blue)}
+.stack-item.sre{background:var(--green-l);border-color:var(--green-m);color:var(--green)}
+.code-block{background:#1a1f2e;border-radius:10px;padding:20px 24px;margin:20px 0;overflow-x:auto}
+.code-block pre{font-family:var(--mono);font-size:12px;color:#a8b8c8;line-height:1.8}
+.code-block .str{color:#86efac}
+.code-block .cmt{color:#475569}
+.code-block .fn{color:#fde68a}
+.code-block .kw{color:#7dd3fc}
+.paused-box{background:#fff4ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#b45309}
+.paused-box a{color:#b45309;font-weight:600}
+footer{padding:32px 0;text-align:center}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:10px;flex-wrap:wrap}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:11px;color:var(--light)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-back">← Back to Portfolio</a>
+    <div class="nav-links">
+      <a href="https://github.com/amarshiv86/p11-streaming-llm-api" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-eyebrow">P11 · Streaming <span class="proj-badge">Paused</span></div>
+    <h1 class="proj-title">Streaming LLM API</h1>
+    <p class="proj-subtitle">
+      Token-by-token streaming with Time To First Token (TTFT) tracking,
+      cancellation tokens, per-user rate limiting (10 req/min), and a
+      real-time metrics panel. Every request tracked — TTFT, throughput,
+      cancellations, errors — stored in an in-memory MetricsStore.
+    </p>
+    <div class="proj-meta">
+      <div class="meta-item"><div class="meta-label">Model</div><div class="meta-value">Qwen2.5-0.5B · local</div></div>
+      <div class="meta-item"><div class="meta-label">Key metric</div><div class="meta-value blue">TTFT · p95 latency</div></div>
+      <div class="meta-item"><div class="meta-label">Rate limit</div><div class="meta-value">10 req/min per session</div></div>
+      <div class="meta-item"><div class="meta-label">Cancellation</div><div class="meta-value green">Token-based</div></div>
+      <div class="meta-item"><div class="meta-label">History</div><div class="meta-value">Last 50 requests</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- What TTFT is -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Why TTFT Matters</div>
+    <p class="prose">
+      <strong>Time To First Token (TTFT)</strong> is the most important latency metric
+      for streaming LLM APIs. It measures the time from request sent to first token
+      received — the moment the user sees the response start appearing. This is
+      what makes a streaming API feel fast or slow, regardless of total generation time.
+    </p>
+    <div class="metrics-grid" style="margin-top:24px">
+      <div class="metric-card">
+        <div class="metric-num blue">TTFT</div>
+        <div class="metric-label">Time to First Token</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num green">tok/s</div>
+        <div class="metric-label">Token Throughput</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num amber">p95</div>
+        <div class="metric-label">95th Percentile TTFT</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num" style="color:var(--purple)">50</div>
+        <div class="metric-label">Max History (requests)</div>
+      </div>
+    </div>
+    <p class="prose">
+      In production you'd SLO on <strong>p95 TTFT &lt; 500ms</strong> for GPU-served models.
+      On CPU (this demo) TTFT is ~33 seconds — expected and clearly displayed.
+      The metrics infrastructure is production-ready regardless of the hardware.
+    </p>
+  </div>
+</div>
+
+<!-- Four core features -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Four Core Features</div>
+    <div class="feature-grid">
+      <div class="feature-card blue">
+        <div class="feature-card-title">TTFT + Throughput Tracking</div>
+        <div class="feature-card-desc">
+          Every request gets a <strong>StreamMetrics dataclass</strong> tracking:
+          started_at, first_token_at, completed_at, token_count.
+          TTFT, total duration, and tokens/second computed as properties.
+          Last 50 requests stored in MetricsStore for p95 calculation.
+        </div>
+      </div>
+      <div class="feature-card green">
+        <div class="feature-card-title">Cancellation Tokens</div>
+        <div class="feature-card-desc">
+          Each session gets a <strong>CancellationToken</strong> — user clicks Stop,
+          token is set to cancelled, next iteration of the streaming loop checks
+          it and exits cleanly. State recorded: tokens generated before cancel,
+          latency up to cancellation point.
+        </div>
+      </div>
+      <div class="feature-card amber">
+        <div class="feature-card-title">Per-user Rate Limiting</div>
+        <div class="feature-card-desc">
+          <strong>Token bucket rate limiter</strong> — max 10 requests per 60 seconds
+          per session ID. Thread-safe with a lock. Expired entries pruned on each
+          check. Returns retry_after seconds when limit hit — not just a 429.
+        </div>
+      </div>
+      <div class="feature-card purple">
+        <div class="feature-card-title">Real-time Metrics Panel</div>
+        <div class="feature-card-desc">
+          Dashboard shows live stats from MetricsStore:
+          total requests, completed, cancelled, errors,
+          <strong>avg TTFT, p95 TTFT</strong>, avg throughput.
+          Updates on every request — no polling needed.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Architecture -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <svg width="100%" viewBox="0 0 700 460" role="img" style="margin:24px 0;border-radius:12px">
+    <title>P11 Streaming LLM API Architecture</title>
+    <defs>
+      <marker id="arr11" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="0" y="0" width="700" height="460" rx="12" fill="#0f1923"/>
+    <rect x="16" y="16" width="668" height="428" rx="8" fill="none" stroke="#1e3a4a" stroke-width="1.5" stroke-dasharray="6 3"/>
+    <rect x="240" y="36" width="200" height="44" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="340" y="54" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#e2e8f0">User Request</text>
+    <text x="340" y="70" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#64748b">prompt + session_id</text>
+    <line x1="340" y1="80" x2="340" y2="104" stroke="#334155" stroke-width="1.5" marker-end="url(#arr11)"/>
+    <rect x="160" y="112" width="360" height="44" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="340" y="130" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#f59e0b">RateLimiter.is_allowed(session_id)</text>
+    <text x="340" y="148" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">token bucket · 10 req/min · thread-safe</text>
+    <line x1="340" y1="156" x2="340" y2="168" stroke="#334155" stroke-width="1.5"/>
+    <line x1="200" y1="168" x2="500" y2="168" stroke="#334155" stroke-width="1.5"/>
+    <line x1="200" y1="168" x2="200" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#arr11)"/>
+    <line x1="500" y1="168" x2="500" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#arr11)"/>
+    <text x="268" y="164" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#475569">allowed</text>
+    <text x="432" y="164" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#ef4444">blocked</text>
+    <rect x="60" y="200" width="280" height="56" rx="6" fill="#0a1a35" stroke="#1d4ed8" stroke-width="1"/>
+    <text x="200" y="220" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="13" font-weight="600" fill="#60a5fa">stream_response() generator</text>
+    <text x="200" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">StreamMetrics + CancellationToken created</text>
+    <line x1="200" y1="256" x2="200" y2="280" stroke="#334155" stroke-width="1.5" marker-end="url(#arr11)"/>
+    <rect x="390" y="200" width="240" height="56" rx="6" fill="#2a0a0a" stroke="#b91c1c" stroke-width="1"/>
+    <text x="510" y="220" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f87171">⚠ Rate limited</text>
+    <text x="510" y="238" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#ef4444">retry_after seconds returned</text>
+    <rect x="60" y="288" width="280" height="44" rx="6" fill="#1e1535" stroke="#7c3aed" stroke-width="1"/>
+    <text x="200" y="306" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#a78bfa">Qwen2.5-0.5B inference</text>
+    <text x="200" y="322" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#8b5cf6">full output → word-by-word streaming</text>
+    <line x1="200" y1="332" x2="200" y2="356" stroke="#334155" stroke-width="1.5" marker-end="url(#arr11)"/>
+    <rect x="60" y="364" width="280" height="44" rx="6" fill="#0d2e24" stroke="#0d6e56" stroke-width="1"/>
+    <text x="200" y="382" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#34d399">yield (partial_text, metrics_line)</text>
+    <text x="200" y="398" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#6ee7b7">check cancellation each iteration · 20ms delay</text>
+    <rect x="390" y="320" width="250" height="56" rx="6" fill="#2a1505" stroke="#b45309" stroke-width="1"/>
+    <text x="515" y="340" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#f59e0b">MetricsStore (last 50)</text>
+    <text x="515" y="358" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="11" fill="#d97706">avg TTFT · p95 TTFT · tok/s</text>
+    <path d="M340 386 L390 386 L390 348" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr11)"/>
+    <text x="370" y="370" font-family="Inter,sans-serif" font-size="10" fill="#475569">on complete/cancel</text>
+    <rect x="390" y="400" width="250" height="36" rx="6" fill="#1e2d3a" stroke="#2d4a5a" stroke-width="1"/>
+    <text x="515" y="418" text-anchor="middle" dominant-baseline="central" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#94a3b8">Gradio metrics panel</text>
+    <line x1="515" y1="376" x2="515" y2="400" stroke="#334155" stroke-width="1.5" marker-end="url(#arr11)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- How streaming works -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">How it works</div>
+    <ul class="steps">
+      <li><div class="step-num">1</div><div class="step-content"><strong>Rate check</strong> — RateLimiter.is_allowed(session_id) called first. If limit hit, yields a rate limit message with retry_after seconds. No request proceeds.</div></li>
+      <li><div class="step-num">2</div><div class="step-content"><strong>StreamMetrics created</strong> — new dataclass with request_id (UUID), started_at timestamp. CancellationToken created for this session.</div></li>
+      <li><div class="step-num">3</div><div class="step-content"><strong>Model generates</strong> — Qwen2.5-0.5B runs full inference (transformers doesn't support true token streaming). Full output stored in memory.</div></li>
+      <li><div class="step-num">4</div><div class="step-content"><strong>Word-by-word streaming</strong> — output split by spaces, yielded one word at a time with 20ms delay. First word triggers record_first_token() — TTFT measured here.</div></li>
+      <li><div class="step-num">5</div><div class="step-content"><strong>Cancellation check</strong> — every iteration checks cancel_token.is_cancelled. If set, calls record_cancel() and exits the generator cleanly.</div></li>
+      <li><div class="step-num">6</div><div class="step-content"><strong>Metrics update</strong> — on complete or cancel, StreamMetrics saved to MetricsStore. Dashboard panel reads from MetricsStore.summary() on next render.</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- Stream trace example -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">What the stream looks like</div>
+    <p class="prose" style="margin-bottom:16px">
+      Each yield from the generator returns two values — the accumulated text
+      and a live metrics line shown below the response:
+    </p>
+    <div class="stream-box"><pre><span class="muted">User: "What should I do when auth-service has a high error rate?"</span>
+
+<span class="muted">[yield 1]</span>  <span class="token">First</span>                    <span class="metrics">⏳ Streaming... TTFT: 33241ms · 1 tokens</span>
+<span class="muted">[yield 2]</span>  <span class="token">First check</span>              <span class="metrics">⏳ Streaming... TTFT: 33241ms · 2 tokens</span>
+<span class="muted">[yield 3]</span>  <span class="token">First check the</span>          <span class="metrics">⏳ Streaming... TTFT: 33241ms · 3 tokens</span>
+<span class="muted">...</span>
+<span class="muted">[yield 47]</span> <span class="token">First check the error rate in Prometheus...</span>  <span class="metrics">⏳ 47 tokens</span>
+
+<span class="muted">[complete]</span> <span class="token">First check the error rate... kubectl logs auth-service-xxx</span>
+           <span class="metrics">✅ Done · TTFT: 33241ms · Total: 34180ms · 4.8 tok/s · 47 tokens</span>
+
+<span class="muted">[cancelled mid-stream]</span>
+           <span class="cancel">🚫 Cancelled after 23 tokens</span>
+
+<span class="muted">[rate limited]</span>
+           <span class="warn">⚠️ Rate limit exceeded. Try again in 42s.</span></pre></div>
+  </div>
+</div>
+
+<!-- SRE Additions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">SRE Additions</div>
+    <div class="features">
+      <div class="feature"><strong>TTFT tracking</strong> — first_token_at timestamp captured on first yielded token</div>
+      <div class="feature"><strong>p95 TTFT</strong> — sorted percentile computed from MetricsStore history</div>
+      <div class="feature"><strong>Cancellation tokens</strong> — clean exit preserving partial metrics</div>
+      <div class="feature"><strong>Thread-safe rate limiter</strong> — threading.Lock prevents race conditions</div>
+      <div class="feature"><strong>retry_after</strong> — rate limit returns exact seconds until window resets</div>
+      <div class="feature"><strong>StreamMetrics dataclass</strong> — typed, consistent, serializable to dict</div>
+      <div class="feature"><strong>Error recording</strong> — exceptions captured in metrics, not just raised</div>
+      <div class="feature"><strong>Token bucket algorithm</strong> — sliding window, not fixed window</div>
+    </div>
+  </div>
+</div>
+
+<!-- Key Design Decisions -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Key Design Decisions</div>
+    <div class="decisions">
+      <div class="decision">
+        <div class="decision-q">Why simulate word-by-word streaming instead of true token streaming?</div>
+        <div class="decision-a">HuggingFace transformers doesn't support true token streaming without the TextIteratorStreamer class and threading. For this demo the goal is showing the streaming infrastructure — rate limiting, cancellation, TTFT measurement — not the model internals. The word-by-word simulation produces identical UI behavior. The code comment is explicit: "simulated — realistic for demo". In production you'd swap in TextIteratorStreamer.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why a token bucket rate limiter instead of a simple counter?</div>
+        <div class="decision-a">A simple counter resets at fixed intervals — a user could send 10 requests at 11:59:59 and 10 more at 12:00:01, effectively getting 20 in 2 seconds. A token bucket (sliding window) tracks individual request timestamps and checks how many occurred in the last N seconds — much fairer and harder to abuse. The thread lock is critical: without it, concurrent requests could both pass the check before either increments the counter.</div>
+      </div>
+      <div class="decision">
+        <div class="decision-q">Why store only the last 50 requests in MetricsStore?</div>
+        <div class="decision-a">An unbounded history would grow forever in a long-running process, consuming memory. 50 requests is enough to compute meaningful p95 statistics (needs at least 20 data points) and show recent trends without memory pressure. The pop(0) approach is simple but O(n) — in production you'd use a collections.deque(maxlen=50) for O(1) append and eviction.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stack -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div class="stack-grid">
+      <span class="stack-item blue">Qwen2.5-0.5B</span>
+      <span class="stack-item blue">HuggingFace Transformers</span>
+      <span class="stack-item">Gradio 5</span>
+      <span class="stack-item">Python threading</span>
+      <span class="stack-item">Python dataclasses</span>
+      <span class="stack-item sre">TTFT tracking</span>
+      <span class="stack-item sre">p95 latency</span>
+      <span class="stack-item sre">Cancellation tokens</span>
+      <span class="stack-item sre">Token bucket rate limiter</span>
+    </div>
+  </div>
+</div>
+
+<!-- Try it -->
+<div class="wrap">
+  <div class="section">
+    <div class="section-title">Try it yourself</div>
+    <div class="paused-box">
+      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
+      Visit <a href="https://huggingface.co/spaces/amarshiv86/p11-streaming" target="_blank">the Space</a>
+      and click <em>Restart this Space</em> (takes ~60 seconds — model loading).
+      Note: TTFT will be ~33 seconds on CPU — expected, displayed clearly.
+    </div>
+    <div class="code-block"><pre><span class="cmt"># Run locally</span>
+git clone https://github.com/amarshiv86/p11-streaming-llm-api
+cd p11-streaming-llm-api
+pip install -r requirements.txt
+python hf_space/app.py
+<span class="cmt"># → http://localhost:7860</span>
+
+<span class="cmt"># Try these to test each feature:</span>
+<span class="str">"What is a burn rate alert?"</span>        <span class="cmt"># normal stream</span>
+<span class="str">"Explain Kubernetes in detail..."</span>   <span class="cmt"># then click Stop → cancellation</span>
+<span class="cmt"># Send 11 requests quickly           → rate limit trigger</span>
+<span class="cmt"># Watch metrics panel update live    → TTFT, tok/s, p95</span>
+
+<span class="cmt"># Run tests</span>
+pytest tests/ -v</pre></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <footer>
+    <div class="footer-links">
+      <a href="../index.html">← Portfolio</a>
+      <a href="https://github.com/amarshiv86/p11-streaming-llm-api" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p11-streaming" target="_blank">HF Space</a>
+    </div>
+    <div class="footer-copy">Amar Singh · Staff SRE + AI Engineer · 2026</div>
+  </footer>
+</div>
+
+</body>
+</html>

@@ -115,6 +115,7 @@ footer{padding:32px 0;text-align:center}
     <a href="../index.html" class="nav-back">← Back to Portfolio</a>
     <div class="nav-links">
       <a href="https://github.com/amarshiv86/p08-sre-agent" target="_blank">GitHub</a>
+      <a href="https://huggingface.co/spaces/amarshiv86/p08-sre-agent" target="_blank" style="background:var(--green);color:#fff;border-color:var(--green)">Live Demo ↗</a>
     </div>
   </div>
 </nav>
@@ -477,12 +478,7 @@ Action: check recent deployments and review slow query logs.</span></pre></div>
 <div class="wrap">
   <div class="section">
     <div class="section-title">Try it yourself</div>
-    <div class="paused-box">
-      💤 <strong>HF Space is paused</strong> to stay within free tier limits.
-      Visit <a href="https://huggingface.co/spaces/amarshiv86/p08-sre-agent" target="_blank">the Space</a>
-      and click <em>Restart this Space</em> (takes ~60 seconds — model loading).
-    </div>
-    <p class="prose" style="margin-bottom:16px">Good queries to try:</p>
+    <p class="prose" style="margin-bottom:16px">Good queries to try in the live demo:</p>
     <div class="code-block"><pre><span class="cmt"># Try these queries in the Gradio UI:</span>
 <span class="str">"What is the SLO status of auth-service?"</span>
 <span class="str">"Show me all critical alerts"</span>
@@ -502,7 +498,7 @@ pytest tests/ -v</pre></div>
 </div>
 <div class="wrap">
   <div class="proj-header">
-    <div class="proj-eyebrow">P08 · Agents <span class="proj-badge">Paused</span></div>
+    <div class="proj-eyebrow">P08 · Agents <span class="proj-badge" style="background:var(--green-l);color:var(--green);border-color:var(--green-m)">Live ✓</span></div>
     <h1 class="proj-title">SRE Ops Agent with Tools</h1>
     <p class="proj-subtitle">
       ReAct agent that answers SRE on-call queries using 5 real tools —
